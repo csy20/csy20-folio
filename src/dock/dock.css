@@ -1,0 +1,232 @@
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/space-grotesk.woff2") format("woff2");
+}
+
+:root,
+[data-theme="dark"],
+.dock-shell,
+.dock-sound-toggle {
+  --bg-primary: #111214;
+  --surface-soft: #202225;
+  --text-primary: #f4f2ed;
+  --text-secondary: #b7b5ae;
+  --focus-ring: #ff9d7a;
+  --dock-bg: rgba(17, 18, 20, 0.96);
+  --dock-border: rgba(244, 242, 237, 0.14);
+  --dock-hover: #353638;
+}
+
+.dock-shell a {
+  color: inherit;
+  text-decoration: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dock-shell button,
+.dock-sound-toggle {
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  border: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dock-shell svg,
+.dock-sound-toggle svg {
+  display: block;
+  flex-shrink: 0;
+}
+
+.dock-shell :focus-visible,
+.dock-sound-toggle:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 5px;
+}
+
+.dock-sound-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px;
+  background: transparent;
+  border-radius: 8px;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 12px;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+
+.dock-sound-toggle:hover {
+  background: var(--surface-soft);
+  color: var(--text-primary);
+}
+
+.dock-shell {
+  position: fixed;
+  z-index: 50;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 16px;
+  border: 1px solid var(--dock-border);
+  border-radius: 999px;
+  background: var(--dock-bg);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow:
+    0 12px 36px -16px #0005,
+    inset 0 1px 0 #ffffff08;
+  width: min(432px, calc(100% - 24px));
+  height: 64px;
+  font-family: "Space Grotesk", sans-serif;
+}
+
+.dock-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 44px;
+  max-width: 44px;
+  min-width: 0;
+  width: auto;
+  height: 44px;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-secondary);
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+}
+
+.dock-item:active {
+  background: var(--dock-hover);
+  color: var(--text-primary);
+}
+
+.dock-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dock-tooltip {
+  position: absolute;
+  bottom: calc(100% + 18px);
+  left: 50%;
+  transform: translateX(-50%) translateY(3px);
+  padding: 7px 10px;
+  white-space: nowrap;
+  border-radius: 5px;
+  color: var(--bg-primary);
+  background: var(--text-primary);
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 12px;
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    opacity 0.15s,
+    transform 0.15s;
+}
+
+.dock-item:focus-visible {
+  outline-offset: -3px;
+}
+
+.dock-item:first-child .dock-tooltip {
+  left: 0;
+  transform: translateY(3px);
+}
+
+.dock-item:last-child .dock-tooltip {
+  left: auto;
+  right: 0;
+  transform: translateY(3px);
+}
+
+.dock-item:focus-visible .dock-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.dock-item:first-child:focus-visible .dock-tooltip,
+.dock-item:last-child:focus-visible .dock-tooltip {
+  transform: translateY(0);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dock-item:hover {
+    background: var(--dock-hover);
+    color: var(--text-primary);
+  }
+
+  .dock-item:hover .dock-tooltip {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .dock-item:first-child:hover .dock-tooltip,
+  .dock-item:last-child:hover .dock-tooltip {
+    transform: translateY(0);
+  }
+}
+
+@media (min-width: 640px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .dock-shell {
+    animation: dock-appear 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+
+@keyframes dock-appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 767px) {
+  .dock-shell {
+    height: 64px;
+    padding: 9px 10px;
+  }
+
+  .dock-item {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@media (max-width: 360px) {
+  .dock-shell {
+    width: calc(100% - 4px);
+    padding-inline: 3px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dock-shell,
+  .dock-shell *,
+  .dock-sound-toggle,
+  .dock-sound-toggle * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+@media print {
+  .dock-shell,
+  .dock-sound-toggle {
+    display: none;
+  }
+}

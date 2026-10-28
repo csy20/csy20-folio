@@ -1,36 +1,37 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# csy20 folio
 
-## Getting Started
+Portfolio for Chitresh Yadav. The Vercel project is `csy20-folio`. `csy20.me` and `www.csy20.me` are attached there, and `www` redirects to the apex.
 
-First, run the development server:
+Namecheap still hosts DNS. The public site follows this project after the GitHub Pages A records are replaced with `76.76.21.21` on `@` and `www`. Leave the Namecheap MX and SPF records in place.
+
+The social dock is copied from the live site: same icons, links, tooltips, magnification, tick sound, and mute control. The rest of the page is a dark, type-led layout.
+
+## Run locally
 
 ```bash
+cd /home/csy20/Documents/dev/csy20-folio
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open the URL Next prints, usually `http://127.0.0.1:3000`. To pin the host:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npx next dev --hostname 127.0.0.1 --port 3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Check
 
-## Learn More
+```bash
+npm test
+npm run build
+```
 
-To learn more about Next.js, take a look at the following resources:
+`npm test` covers the copied dock interactions and the open-source snapshot. Nothing in the app calls GitHub, Vercel, or another service at runtime. Fonts are self-hosted after the Next.js build downloads Geist.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Dock notes
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Home scrolls to `#hero`.
+- GitHub, X, Threads, YouTube, and email are in the dock. Instagram and LinkedIn stay in the contact list.
+- Mute state is stored in `localStorage` as `csy20-dock-sound`.
+- The dock stays on its dark chrome. The page background stays `rgb(10, 10, 10)`.
