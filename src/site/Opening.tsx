@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { portraits, profile } from "@/data/siteContent";
 
 const ease = [0.22, 1, 0.36, 1] as const;
+const hops = ["mic", "vad", "asr", "out"];
 
 function subscribeToMotion(onChange: () => void) {
   const media = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -52,10 +53,10 @@ export function Opening({ onLeave }: { onLeave: () => void }) {
         return;
       }
       setLeaving(true);
-      hideTimer = window.setTimeout(() => setVisible(false), 560);
+      hideTimer = window.setTimeout(() => setVisible(false), 450);
     };
 
-    const leaveTimer = window.setTimeout(() => finish(false), 1050);
+    const leaveTimer = window.setTimeout(() => finish(false), 1400);
 
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape" || event.key === "Enter") finish(true);
@@ -76,12 +77,12 @@ export function Opening({ onLeave }: { onLeave: () => void }) {
 
   return (
     <motion.div
-      className="opening-curtain fixed inset-0 z-[70] flex cursor-pointer items-center justify-center bg-[rgb(10,10,10)] px-6"
+      className="opening-curtain fixed inset-0 z-[70] flex cursor-pointer items-center justify-center bg-[var(--page-bg)] px-6 text-[var(--ink)]"
       aria-hidden="true"
       initial={{ y: 0 }}
       animate={{ y: leaving ? "-100%" : "0%" }}
       transition={{
-        duration: leaving ? 0.55 : 0,
+        duration: leaving ? 0.45 : 0,
         ease: [0.76, 0, 0.24, 1],
       }}
       onClick={() => skipRef.current()}
@@ -104,12 +105,12 @@ export function Opening({ onLeave }: { onLeave: () => void }) {
           </picture>
         </motion.div>
         <motion.div
-          className="mt-6 h-px w-28 origin-center bg-white/35"
+          className="mt-6 h-px w-28 origin-center bg-[var(--ink)] opacity-35"
           initial={{ scaleX: 0 }}
           animate={{ scaleX: 1 }}
           transition={{ duration: 0.45, delay: 0.18, ease }}
         />
-        <p className="mt-5 overflow-hidden text-[2.2rem] leading-[0.96] font-medium tracking-[-0.045em] text-[#eceae4] sm:text-[3.25rem]">
+        <p className="mt-5 overflow-hidden text-[2.2rem] leading-[0.96] font-medium tracking-[-0.045em] sm:text-[3.25rem]">
           <motion.span
             className="block"
             initial={{ y: "110%" }}
@@ -120,13 +121,40 @@ export function Opening({ onLeave }: { onLeave: () => void }) {
           </motion.span>
         </p>
         <motion.p
-          className="mt-3 text-[17px] text-[#b7b5ae]"
+          className="mt-3 text-[17px] text-[var(--ink-soft)]"
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.55, ease }}
         >
           {profile.role}
         </motion.p>
+        <div className="mt-8 flex items-center gap-2 font-mono text-[11px] tabular-nums text-[var(--ink-faint)]">
+          {hops.map((hop, index) => (
+            <motion.div
+              key={hop}
+              className="flex items-center gap-2"
+              initial={{ opacity: 0.25 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.25, delay: 0.5 + index * 0.18 }}
+            >
+              <motion.span
+                className="h-1.5 w-1.5 rounded-full bg-[var(--ink)]"
+                initial={{ scale: 0.6 }}
+                animate={{ scale: [0.6, 1.8, 1] }}
+                transition={{ duration: 0.4, delay: 0.5 + index * 0.18 }}
+              />
+              <span>{hop}</span>
+              {index < hops.length - 1 && (
+                <motion.span
+                  className="h-px w-5 origin-left bg-[var(--ink)] opacity-40"
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ duration: 0.18, delay: 0.6 + index * 0.18 }}
+                />
+              )}
+            </motion.div>
+          ))}
+        </div>
       </div>
     </motion.div>
   );

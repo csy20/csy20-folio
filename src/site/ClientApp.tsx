@@ -2,6 +2,10 @@
 
 import { motion } from "motion/react";
 import { useCallback, useSyncExternalStore, useState, type ReactNode } from "react";
+import { CountUp } from "@/site/CountUp";
+import { IndiaClock } from "@/site/IndiaClock";
+import { PipelineSchematic } from "@/site/PipelineSchematic";
+import { ScrollProgress } from "./ScrollProgress";
 import { Opening, usePrefersReducedMotion } from "@/site/Opening";
 import { SocialDock } from "@/dock/SocialDock";
 import { SoundToggle } from "@/dock/SoundToggle";
@@ -21,16 +25,39 @@ import {
   type Project,
 } from "@/data/siteContent";
 
-const featuredTitles = [
-  "02_OS",
-  "Bytewise",
-  "Nen",
-  "Speech Relay",
+const featuredTitles = ["Speech Relay", "02_OS", "Bytewise", "Nen"] as const;
+
+const alsoTitles = [
   "Speech Relay Rust",
   "MediaPipe AI",
+  "Router Agent",
+  "Warrant",
 ] as const;
 
-const alsoTitles = ["Router Agent", "Warrant"] as const;
+const alsoLines: Record<(typeof alsoTitles)[number], string> = {
+  "Speech Relay Rust": "Hindi–English Whisper, served from Rust.",
+  "MediaPipe AI": "Transcription and summaries across five containers.",
+  "Router Agent": "Picks a model before spending a token.",
+  Warrant: "Asks before a production change.",
+};
+
+const featuredContributionUrls = [
+  "https://github.com/semantica-agi/semantica/pull/1922",
+  "https://github.com/redhat-et/ripwire/pull/244",
+  "https://github.com/internetarchive/openlibrary/pull/13611",
+] as const;
+
+const featuredContributionSet = new Set<string>(featuredContributionUrls);
+
+const featuredContributions = featuredContributionUrls.map((url) => {
+  const record = mergedContributions.find((item) => item.url === url);
+  if (!record) throw new Error(`Missing contribution: ${url}`);
+  return record;
+});
+
+const moreContributions = mergedContributions.filter(
+  (record) => !featuredContributionSet.has(record.url),
+);
 
 const metrics: Record<string, string> = {
   "02_OS": "Public alpha · v2026.10.01",
@@ -132,21 +159,121 @@ function ExternalLink({
   );
 }
 
-function SectionLabel({ index, children }: { index: string; children: ReactNode }) {
+function SectionLabel({
+  index,
+  children,
+  play,
+}: {
+  index: string;
+  children: ReactNode;
+  play: boolean;
+}) {
   return (
-    <div className="mb-2 flex items-baseline justify-between gap-4">
-      <h2 className="text-[1.35rem] font-medium tracking-[-0.03em]">{children}</h2>
-      <span className="font-mono text-[12px] text-[#8d8b84]">{index}</span>
+    <div>
+      <div className="mb-3 flex items-baseline justify-between gap-4">
+        <h2 className="text-[1.35rem] font-medium tracking-[-0.03em]">{children}</h2>
+        <motion.span
+          key={play ? "index" : "index-wait"}
+          className="section-index font-mono text-[12px] text-[var(--ink-faint)]"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true, margin: "0px 0px -40px 0px" }}
+          transition={{ duration: 0.4, delay: 0.15, ease }}
+        >
+          {index}
+        </motion.span>
+      </div>
+      <motion.div
+        key={play ? "rule" : "rule-wait"}
+        className="section-rule"
+        initial={{ scaleX: 0 }}
+        whileInView={{ scaleX: 1 }}
+        viewport={{ once: true, margin: "0px 0px -40px 0px" }}
+        transition={{ duration: 0.6, ease }}
+      />
     </div>
   );
 }
 
-function ProjectRow({ title }: { title: string }) {
+function AlsoRow({ title }: { title: (typeof alsoTitles)[number] }) {
   const project = findProject(title);
   return (
-    <article
+    <article id={anchors[title]} className="draw-row border-t border-[var(--line)] py-3.5">
+      <div className="flex items-baseline justify-between gap-4">
+        <h3 className="draw-link text-[15px] font-medium tracking-[-0.02em]">
+          {project.title}
+        </h3>
+        <div className="flex shrink-0 gap-3">
+          {project.links.map((link) => (
+            <ExternalLink
+              key={link.href}
+              href={link.href}
+              className="page-link text-[12px] text-[var(--ink-faint)]"
+            >
+              {link.label}
+            </ExternalLink>
+          ))}
+        </div>
+      </div>
+      <p className="mt-1 max-w-[46ch] text-[13px] leading-5 text-[var(--ink-soft)]">
+        {alsoLines[title]}
+      </p>
+    </article>
+  );
+}
+
+function ContributionList({
+  records,
+}: {
+  records: typeof mergedContributions;
+}) {
+  return (
+    <ol>
+      {records.map((record) => (
+        <li key={record.url} className="draw-row border-t border-[var(--line)]">
+          <ExternalLink href={record.url} className="page-link group block py-4">
+            <span className="flex items-center gap-2 font-mono text-[12px] text-[var(--ink-faint)]">
+              <span className="rounded border border-[var(--line)] px-1.5 text-[10px] text-[var(--pr)]">
+                merged
+              </span>
+              {record.repository}#{record.number} · {formatContributionDate(getContributionDate(record))}
+            </span>
+            <span className="draw-link mt-1 inline-block max-w-full text-[15px] leading-6 group-hover:text-[var(--hover)]">
+              {record.title}
+            </span>
+          </ExternalLink>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function ProjectRow({
+  title,
+  index,
+  play,
+}: {
+  title: string;
+  index: number;
+  play: boolean;
+}) {
+  const project = findProject(title);
+  return (
+    <motion.article
       id={anchors[title]}
-      className="group flex flex-col rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4"
+      key={play ? title : `${title}-wait`}
+      className={`work-card group flex flex-col rounded-2xl border border-[var(--line)] bg-[var(--card)] p-4 ${
+        title === "Speech Relay" || title === "Nen" ? "sm:col-span-2" : ""
+      }`}
+      initial={{ opacity: 0, y: 10 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "0px 0px -40px 0px" }}
+      transition={{ duration: 0.45, delay: index * 0.06, ease }}
+      onPointerMove={(event) => {
+        const rect = event.currentTarget.getBoundingClientRect();
+        event.currentTarget.style.setProperty("--mx", `${event.clientX - rect.left}px`);
+        event.currentTarget.style.setProperty("--my", `${event.clientY - rect.top}px`);
+      }}
     >
       {project.logo ? (
         <img
@@ -154,16 +281,19 @@ function ProjectRow({ title }: { title: string }) {
           alt=""
           width={64}
           height={64}
-          className="h-11 w-11 rounded-[0.85rem] bg-[#111214] object-contain"
+          className={`work-logo h-11 w-11 rounded-[0.85rem] object-contain ${
+            title === "02_OS" ? "bg-white" : "bg-[var(--logo-well)]"
+          }`}
         />
       ) : null}
-      <h3 className="mt-4 text-[1.05rem] font-medium tracking-[-0.02em] text-[#eceae4] group-hover:text-white">
+      <h3 className="work-title mt-4 text-[1.05rem] font-medium tracking-[-0.02em] text-[var(--ink)]">
         {project.title}
       </h3>
-      <p className="mt-1.5 line-clamp-3 text-[13px] leading-5 text-[#b7b5ae]">
+      <p className="mt-1.5 line-clamp-3 text-[13px] leading-5 text-[var(--ink-soft)]">
         {blurbs[title]}
       </p>
-      <p className="mt-3 font-mono text-[11px] leading-4 text-[#8d8b84]">
+      {title === "Speech Relay" ? <PipelineSchematic /> : null}
+      <p className="mt-3 font-mono text-[11px] leading-4 text-[var(--ink-faint)]">
         {metrics[title]}
       </p>
       <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1">
@@ -171,13 +301,13 @@ function ProjectRow({ title }: { title: string }) {
           <ExternalLink
             key={link.href}
             href={link.href}
-            className="page-link text-[12px] text-[#b7b5ae] underline-offset-4 hover:underline"
+            className="page-link text-[12px] text-[var(--ink-soft)] underline-offset-4 hover:underline"
           >
             {link.label}
           </ExternalLink>
         ))}
       </div>
-    </article>
+    </motion.article>
   );
 }
 
@@ -195,33 +325,32 @@ export function ClientApp() {
     <>
       <a
         href="#main-content"
-        className="page-link sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:bg-[#eceae4] focus:px-3 focus:py-2 focus:text-[#191a1b]"
+        className="page-link sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:bg-[var(--ink)] focus:px-3 focus:py-2 focus:text-[var(--page-bg)]"
       >
         Skip to content
       </a>
+      <ScrollProgress />
       <main
         id="main-content"
         tabIndex={-1}
-        className="mx-auto w-full max-w-[40rem] px-6 pt-14 pb-36 outline-none sm:pt-20"
+        className="mx-auto w-full max-w-[48rem] px-6 pt-14 pb-36 outline-none sm:pt-20"
       >
         <motion.header
-          className="reveal flex items-baseline justify-between gap-4 text-[14px]"
+          className="reveal flex items-center justify-between gap-4 text-[14px]"
           {...enter(play, 0)}
         >
-          <span className="flex items-baseline gap-3">
-            <a href="#hero" className="page-link tracking-[-0.02em]">
-              csy20
-            </a>
-            <span className="font-mono text-[12px] text-[#8d8b84]">
-              IST · UTC+5:30
-            </span>
-          </span>
-          <ExternalLink
-            href={resumeUrl}
-            className="page-link text-[#8d8b84]"
-          >
-            Resume
-          </ExternalLink>
+          <a href="#hero" className="page-link tracking-[-0.02em]">
+            csy20
+          </a>
+          <div className="flex items-center gap-5">
+            <IndiaClock />
+            <ExternalLink
+              href={resumeUrl}
+              className="page-link text-[var(--ink-faint)]"
+            >
+              Resume
+            </ExternalLink>
+          </div>
         </motion.header>
 
         <section id="hero" aria-labelledby="intro-heading" className="pt-16 sm:pt-24">
@@ -234,7 +363,7 @@ export function ClientApp() {
                 >
                   {profile.name}
                 </h1>
-                <p className="mt-3 text-[17px] text-[#b7b5ae]">{profile.role}</p>
+                <p className="mt-3 text-[17px] text-[var(--ink-soft)]">{profile.role}</p>
               </div>
               <picture className="shrink-0">
                 <source srcSet="/portrait-twitter.webp" type="image/webp" />
@@ -254,33 +383,33 @@ export function ClientApp() {
             <p className="mt-8 max-w-[16ch] text-[1.7rem] leading-[1.15] font-medium tracking-[-0.035em] sm:text-[2rem]">
               Building useful software, from model to product.
             </p>
-            <p className="mt-6 max-w-[46ch] text-[16px] leading-7 text-[#b7b5ae]">
+            <p className="mt-6 max-w-[46ch] text-[16px] leading-7 text-[var(--ink-soft)]">
               {profile.heroDescription}
             </p>
           </motion.div>
           <motion.div className="reveal" {...enter(play, 0.26)}>
             <div className="mt-10 grid gap-x-6 gap-y-5 sm:grid-cols-3">
-              <a href="#speech-relay" className="page-link border-t border-white/[0.08] pt-3">
+              <a href="#speech-relay" className="page-link border-t border-[var(--line)] pt-3">
                 <strong className="block text-[15px] font-medium tracking-[-0.02em]">
-                  23.6% less latency
+                  <CountUp to={23.6} decimals={1} active={play} />% less latency
                 </strong>
-                <span className="mt-1 block text-[13px] leading-5 text-[#8d8b84]">
+                <span className="mt-1 block text-[13px] leading-5 text-[var(--ink-faint)]">
                   Speech Relay · VAD vs fixed windows
                 </span>
               </a>
-              <a href="#open-source" className="page-link border-t border-white/[0.08] pt-3">
+              <a href="#open-source" className="page-link border-t border-[var(--line)] pt-3">
                 <strong className="block text-[15px] font-medium tracking-[-0.02em]">
-                  {mergedContributionSummary.merged} merged upstream PRs
+                  <CountUp to={mergedContributionSummary.merged} active={play} /> merged upstream PRs
                 </strong>
-                <span className="mt-1 block text-[13px] leading-5 text-[#8d8b84]">
+                <span className="mt-1 block text-[13px] leading-5 text-[var(--ink-faint)]">
                   {mergedContributionSummary.repositories} repositories
                 </span>
               </a>
-              <a href="#bytewise" className="page-link border-t border-white/[0.08] pt-3">
+              <a href="#bytewise" className="page-link border-t border-[var(--line)] pt-3">
                 <strong className="block text-[15px] font-medium tracking-[-0.02em]">
                   Shipped on Google Play
                 </strong>
-                <span className="mt-1 block text-[13px] leading-5 text-[#8d8b84]">
+                <span className="mt-1 block text-[13px] leading-5 text-[var(--ink-faint)]">
                   Bytewise and Nen
                 </span>
               </a>
@@ -289,38 +418,33 @@ export function ClientApp() {
               <a href="mailto:chitreshy20@gmail.com" className="page-link">
                 Email
               </a>
-              <ExternalLink href={resumeUrl} className="page-link text-[#8d8b84]">
+              <ExternalLink href={resumeUrl} className="page-link text-[var(--ink-faint)]">
                 Resume
               </ExternalLink>
             </div>
           </motion.div>
         </section>
 
-        <motion.section
-          id="projects"
-          aria-labelledby="projects-title"
-          className="reveal mt-24"
-          {...reveal}
-        >
-          <SectionLabel index="01">
+        <section id="projects" aria-labelledby="projects-title" className="mt-24">
+          <SectionLabel index="01" play={play}>
             <span id="projects-title">Selected work</span>
           </SectionLabel>
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            {featuredTitles.map((title) => (
-              <ProjectRow key={title} title={title} />
+          <div className="mt-6 grid items-stretch gap-3 sm:grid-cols-2">
+            {featuredTitles.map((title, index) => (
+              <ProjectRow key={title} title={title} index={index} play={play} />
             ))}
           </div>
           <div className="mt-10">
-            <h3 className="text-[13px] tracking-[0.08em] text-[#8d8b84] uppercase">
+            <h3 className="text-[13px] tracking-[0.08em] text-[var(--ink-faint)] uppercase">
               Also
             </h3>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="mt-4">
               {alsoTitles.map((title) => (
-                <ProjectRow key={title} title={title} />
+                <AlsoRow key={title} title={title} />
               ))}
             </div>
           </div>
-        </motion.section>
+        </section>
 
         <motion.section
           id="open-source"
@@ -328,10 +452,10 @@ export function ClientApp() {
           className="reveal mt-24"
           {...reveal}
         >
-          <SectionLabel index="02">
+          <SectionLabel index="02" play={play}>
             <span id="open-source-title">Open source</span>
           </SectionLabel>
-          <p className="mt-4 max-w-[52ch] text-[15px] leading-7 text-[#b7b5ae]">
+          <p className="mt-4 max-w-[52ch] text-[15px] leading-7 text-[var(--ink-soft)]">
             {mergedContributionSummary.merged} merged pull requests across{" "}
             {mergedContributionSummary.repositories} repositories. Upstream
             work only. The list is a local snapshot from 14 Oct 2026.
@@ -341,33 +465,37 @@ export function ClientApp() {
               <li key={item.repository} className="font-mono text-[12px]">
                 <ExternalLink
                   href={`https://github.com/${item.repository}`}
-                  className="page-link text-[#b7b5ae]"
+                  className="page-link text-[var(--ink-soft)]"
                 >
                   {item.repository}
-                  <span className="ml-2 text-[#eceae4]">{item.merged}</span>
+                  <span className="ml-2 text-[var(--ink)]">{item.merged}</span>
                 </ExternalLink>
               </li>
             ))}
           </ul>
-          <ol className="mt-8">
-            {mergedContributions.map((record) => (
-              <li key={record.url} className="border-t border-white/[0.08]">
-                <ExternalLink href={record.url} className="page-link group block py-4">
-                  <span className="font-mono text-[12px] text-[#8d8b84]">
-                    {record.repository} ·{" "}
-                    {formatContributionDate(getContributionDate(record))}
-                  </span>
-                  <span className="mt-1 block text-[15px] leading-6 group-hover:text-white">
-                    {record.title}
-                  </span>
-                </ExternalLink>
-              </li>
-            ))}
-          </ol>
+          <ContributionList records={featuredContributions} />
+          {moreContributions.length > 0 ? (
+            <details className="group">
+              <summary className="flex cursor-pointer list-none items-baseline justify-between gap-4 border-t border-[var(--line)] py-3 text-[13px] text-[var(--ink-soft)] marker:content-none [&::-webkit-details-marker]:hidden">
+                <span className="group-open:hidden">
+                  Show all {mergedContributions.length}
+                </span>
+                <span className="hidden group-open:inline">Show less</span>
+                <span className="font-mono text-[11px] text-[var(--ink-faint)] group-open:hidden">
+                  {moreContributions.length} more
+                </span>
+              </summary>
+              <div className="show-all-panel">
+                <div>
+                  <ContributionList records={moreContributions} />
+                </div>
+              </div>
+            </details>
+          ) : null}
           <p className="mt-6 text-[14px]">
             <ExternalLink
               href="https://github.com/csy20"
-              className="page-link text-[#b7b5ae]"
+              className="page-link text-[var(--ink-soft)]"
             >
               github.com/csy20
             </ExternalLink>
@@ -380,7 +508,7 @@ export function ClientApp() {
           className="reveal mt-24"
           {...reveal}
         >
-          <SectionLabel index="03">
+          <SectionLabel index="03" play={play}>
             <span id="contact-title">Contact</span>
           </SectionLabel>
           <a
@@ -389,28 +517,28 @@ export function ClientApp() {
           >
             chitreshy20@gmail.com
           </a>
-          <p className="mt-3 text-[15px] text-[#b7b5ae]">{profile.availability}</p>
+          <p className="mt-3 text-[15px] text-[var(--ink-soft)]">{profile.availability}</p>
           <ul className="mt-8 flex flex-col">
             {contactLinks.map((link) => (
-              <li key={link.href} className="border-t border-white/[0.08]">
+              <li key={link.href} className="draw-row border-t border-[var(--line)]">
                 <ExternalLink
                   href={link.href}
                   className="page-link flex items-baseline justify-between gap-4 py-3 text-[15px]"
                 >
-                  <span>{link.label}</span>
-                  <span className="text-[13px] text-[#8d8b84]">{link.detail}</span>
+                  <span className="draw-link">{link.label}</span>
+                  <span className="text-[13px] text-[var(--ink-faint)]">{link.detail}</span>
                 </ExternalLink>
               </li>
             ))}
           </ul>
           <p className="mt-6 text-[14px]">
-            <ExternalLink href={resumeUrl} className="page-link text-[#b7b5ae]">
+            <ExternalLink href={resumeUrl} className="page-link text-[var(--ink-soft)]">
               Resume
             </ExternalLink>
           </p>
-          <footer className="mt-16 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-white/[0.08] pt-6 text-[13px] text-[#8d8b84]">
-            <a href="#hero" className="page-link text-[#eceae4]">
-              Chitresh Yadav <span className="text-[#8d8b84]">/ csy20</span>
+          <footer className="mt-16 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[var(--line)] pt-6 text-[13px] text-[var(--ink-faint)]">
+            <a href="#hero" className="page-link text-[var(--ink)]">
+              Chitresh Yadav <span className="text-[var(--ink-faint)]">/ csy20</span>
             </a>
             <span>Built with care. Kept in the open.</span>
             <AfterMount>

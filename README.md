@@ -2,7 +2,7 @@
 
 Portfolio for Chitresh Yadav. The Vercel project is `csy20-folio`. `csy20.me` and `www.csy20.me` are attached there, and `www` redirects to the apex.
 
-Namecheap still hosts DNS. The public site follows this project after the GitHub Pages A records are replaced with `76.76.21.21` on `@` and `www`. Leave the Namecheap MX and SPF records in place.
+Namecheap still hosts DNS. The public site follows this project after the GitHub Pages records are replaced with `A @ 216.198.79.1`, `A @ 64.29.17.1`, and `CNAME www a19e90919e47b991.vercel-dns-017.com`. Leave the Namecheap nameservers, MX, and SPF records in place.
 
 The social dock is copied from the live site: same icons, links, tooltips, magnification, tick sound, and mute control. The rest of the page is a dark, type-led layout.
 

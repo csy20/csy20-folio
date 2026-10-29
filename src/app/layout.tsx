@@ -27,10 +27,15 @@ export const viewport: Viewport = {
 };
 
 const themeScript = `(() => {
-  document.documentElement.setAttribute("data-theme", "dark");
-  document.documentElement.style.colorScheme = "dark";
+  let theme = "dark";
+  try {
+    const stored = localStorage.getItem("csy20-theme");
+    if (stored === "light" || stored === "dark") theme = stored;
+  } catch (e) {}
+  document.documentElement.setAttribute("data-theme", theme);
+  document.documentElement.style.colorScheme = theme;
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute("content", "#0a0a0a");
+  if (meta) meta.setAttribute("content", theme === "light" ? "#f6f5f1" : "#0a0a0a");
   if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     document.documentElement.classList.add("is-opening");
     window.setTimeout(() => {
