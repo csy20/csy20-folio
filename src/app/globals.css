@@ -74,6 +74,45 @@ summary:focus-visible {
   outline-offset: 3px;
 }
 
+.folio-btn:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.folio-dialog {
+  padding: 0;
+  border: 1px solid var(--line);
+  background: var(--page-bg);
+  color: var(--ink);
+  overscroll-behavior: contain;
+  opacity: 0;
+  transform: translateY(6px) scale(0.99);
+  transition:
+    opacity 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+    overlay 0.18s allow-discrete,
+    display 0.18s allow-discrete;
+}
+
+.folio-dialog[open] {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+@starting-style {
+  .folio-dialog[open] {
+    opacity: 0;
+    transform: translateY(6px) scale(0.99);
+  }
+}
+
+.folio-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.54);
+  backdrop-filter: blur(4px);
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
 html.is-opening main {
   opacity: 0;
 }
@@ -180,7 +219,8 @@ details[open] > .show-all-panel {
 
   .draw-link,
   .show-all-panel,
-  .work-card {
+  .work-card,
+  .folio-dialog {
     transition: none !important;
   }
 }

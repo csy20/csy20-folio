@@ -6,6 +6,13 @@ import { useCallback, useSyncExternalStore, useState, type ReactNode } from "rea
 import { CountUp } from "@/site/CountUp";
 import { IndiaClock } from "@/site/IndiaClock";
 import { PipelineSchematic } from "@/site/PipelineSchematic";
+import {
+  CaseStudyDialog,
+  getNoteIdForProjectTitle,
+  parseNoteHash,
+  type EngineeringNoteId,
+} from "./CaseStudyDialog";
+import { CommandPalette, getContributionDomId } from "./CommandPalette";
 import { ScrollProgress } from "./ScrollProgress";
 import { SectionNav } from "./SectionNav";
 import { Opening, usePrefersReducedMotion } from "@/site/Opening";
@@ -124,6 +131,21 @@ function subscribeToClient() {
   return () => {};
 }
 
+const noteHashEvent = "csy20-note-hash";
+
+function subscribeToNoteHash(onChange: () => void) {
+  window.addEventListener("hashchange", onChange);
+  window.addEventListener(noteHashEvent, onChange);
+  return () => {
+    window.removeEventListener("hashchange", onChange);
+    window.removeEventListener(noteHashEvent, onChange);
+  };
+}
+
+function readNoteHash(): EngineeringNoteId | null {
+  return parseNoteHash(window.location.hash);
+}
+
 function AfterMount({ children }: { children: ReactNode }) {
   const mounted = useSyncExternalStore(
     subscribeToClient,
@@ -237,7 +259,7 @@ function ContributionList({
         const timeline = describeContributionTimeline(record);
         return (
           <li key={record.url} className="draw-row border-t border-[var(--line)]">
-            <details className="group/pr">
+            <details id={getContributionDomId(record)} className="group/pr">
               <summary className="flex cursor-pointer list-none items-start justify-between gap-4 py-4 marker:content-none [&::-webkit-details-marker]:hidden">
                 <span className="min-w-0">
                   <span className="flex items-center gap-2 font-mono text-[12px] text-[var(--ink-faint)]">
@@ -296,12 +318,15 @@ function ProjectRow({
   title,
   index,
   play,
+  onOpenNote,
 }: {
   title: string;
   index: number;
   play: boolean;
+  onOpenNote: (id: EngineeringNoteId) => void;
 }) {
   const project = findProject(title);
+  const noteId = getNoteIdForProjectTitle(title);
   return (
     <motion.article
       id={anchors[title]}
@@ -340,7 +365,16 @@ function ProjectRow({
       <p className="mt-3 font-mono text-[11px] leading-4 text-[var(--ink-faint)]">
         {metrics[title]}
       </p>
-      <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1">
+      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+        {noteId ? (
+          <button
+            type="button"
+            onClick={() => onOpenNote(noteId)}
+            className="folio-btn cursor-pointer text-[12px] font-medium text-[var(--accent)] underline-offset-4 hover:underline"
+          >
+            Engineering notes
+          </button>
+        ) : null}
         {project.links.map((link) => (
           <ExternalLink
             key={link.href}
@@ -359,10 +393,30 @@ export function ClientApp() {
   const contactLinks = socialLinks.filter((link) => link.icon !== "email");
   const reducedMotion = usePrefersReducedMotion();
   const [opened, setOpened] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const activeNote = useSyncExternalStore(
+    subscribeToNoteHash,
+    readNoteHash,
+    () => null,
+  );
   const play = reducedMotion || opened;
   const onLeave = useCallback(() => {
     document.documentElement.classList.remove("is-opening");
     setOpened(true);
+  }, []);
+  const openNote = useCallback((id: EngineeringNoteId) => {
+    window.history.replaceState(null, "", `#notes-${id}`);
+    window.dispatchEvent(new Event(noteHashEvent));
+  }, []);
+  const closeNote = useCallback(() => {
+    if (parseNoteHash(window.location.hash)) {
+      window.history.replaceState(
+        null,
+        "",
+        window.location.pathname + window.location.search,
+      );
+      window.dispatchEvent(new Event(noteHashEvent));
+    }
   }, []);
 
   return (
@@ -395,6 +449,15 @@ export function ClientApp() {
             >
               Resume
             </ExternalLink>
+            <button
+              type="button"
+              onClick={() => setPaletteOpen(true)}
+              aria-label="Open command palette"
+              aria-keyshortcuts="Control+K Meta+K"
+              className="folio-btn cursor-pointer rounded-md border border-[var(--line)] bg-[var(--card)] px-2 py-0.5 font-mono text-[11px] text-[var(--ink-faint)] transition-colors hover:border-[var(--ink-soft)] hover:text-[var(--ink)]"
+            >
+              ⌘K
+            </button>
           </div>
         </motion.header>
 
@@ -476,7 +539,13 @@ export function ClientApp() {
           </SectionLabel>
           <div className="mt-6 grid items-stretch gap-3 sm:grid-cols-2">
             {featuredTitles.map((title, index) => (
-              <ProjectRow key={title} title={title} index={index} play={play} />
+              <ProjectRow
+                key={title}
+                title={title}
+                index={index}
+                play={play}
+                onOpenNote={openNote}
+              />
             ))}
           </div>
           <div className="mt-10">
@@ -520,7 +589,7 @@ export function ClientApp() {
           </ul>
           <ContributionList records={featuredContributions} />
           {moreContributions.length > 0 ? (
-            <details className="group">
+            <details id="more-contributions-details" className="group">
               <summary className="flex cursor-pointer list-none items-baseline justify-between gap-4 border-t border-[var(--line)] py-3 text-[13px] text-[var(--ink-soft)] marker:content-none [&::-webkit-details-marker]:hidden">
                 <span className="group-open:hidden">
                   Show all {mergedContributions.length}
@@ -594,7 +663,15 @@ export function ClientApp() {
         </motion.section>
       </main>
       <Opening onLeave={onLeave} />
-      <AfterMount>{play ? <SocialDock /> : null}</AfterMount>
+      <AfterMount>
+        <CommandPalette
+          open={paletteOpen}
+          onOpenChange={setPaletteOpen}
+          onOpenNote={openNote}
+        />
+        <CaseStudyDialog noteId={activeNote} onClose={closeNote} />
+        {play ? <SocialDock /> : null}
+      </AfterMount>
     </>
   );
 }
