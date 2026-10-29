@@ -1,67 +1,71 @@
 import {
   useCallback,
-  useEffect,
   useLayoutEffect,
   useMemo,
-  useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 
 import { ThemeContext, type Theme } from "./useTheme";
 import { config } from "../config";
 
-type ThemePreference = { theme: Theme; explicit: boolean };
+const themeEvent = "csy20-theme-change";
 
-const DEFAULT_PREFERENCE: ThemePreference = { theme: "dark", explicit: true };
+function subscribe(onChange: () => void) {
+  const onStorage = (event: StorageEvent) => {
+    if (event.key !== config.themeStorageKey && event.key !== null) return;
+    onChange();
+  };
+  window.addEventListener("storage", onStorage);
+  window.addEventListener(themeEvent, onChange);
+  return () => {
+    window.removeEventListener("storage", onStorage);
+    window.removeEventListener(themeEvent, onChange);
+  };
+}
 
-function getInitialPreference(): ThemePreference {
-  return DEFAULT_PREFERENCE;
+function readTheme(): Theme {
+  try {
+    const stored = window.localStorage.getItem(config.themeStorageKey);
+    if (stored === "light" || stored === "dark") return stored;
+  } catch {
+    // Private browsing still gets the default theme.
+  }
+  return "dark";
+}
+
+function applyTheme(theme: Theme) {
+  const root = document.documentElement;
+  root.setAttribute("data-theme", theme);
+  root.style.colorScheme = theme;
+  document
+    .querySelector('meta[name="theme-color"]')
+    ?.setAttribute("content", theme === "light" ? "#f6f5f1" : "#0a0a0a");
+}
+
+function writeTheme(theme: Theme) {
+  try {
+    window.localStorage.setItem(config.themeStorageKey, theme);
+  } catch {
+    // The choice still applies for this visit.
+  }
+  applyTheme(theme);
+  window.dispatchEvent(new Event(themeEvent));
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [preference, setPreference] = useState(getInitialPreference);
-  const { theme, explicit } = preference;
+  const theme = useSyncExternalStore(subscribe, readTheme, () => "dark" as Theme);
 
   useLayoutEffect(() => {
-    const root = document.documentElement;
-    root.setAttribute("data-theme", theme);
-    root.style.colorScheme = theme;
-    document
-      .querySelector('meta[name="theme-color"]')
-      ?.setAttribute("content", theme === "dark" ? "#111214" : "#F6F5F1");
+    applyTheme(readTheme());
   }, [theme]);
 
-  useEffect(() => {
-    if (!explicit) return;
-
-    try {
-      window.localStorage.setItem(config.themeStorageKey, theme);
-    } catch {
-      // The preference remains effective for this visit if storage is blocked.
-    }
-  }, [theme, explicit]);
-
-  useEffect(() => {
-    const syncStoredPreference = (event: StorageEvent) => {
-      if (event.key !== config.themeStorageKey && event.key !== null) return;
-
-      if (event.newValue === "light" || event.newValue === "dark") {
-        setPreference({ theme: event.newValue, explicit: true });
-      } else {
-        setPreference(DEFAULT_PREFERENCE);
-      }
-    };
-
-    window.addEventListener("storage", syncStoredPreference);
-    return () => window.removeEventListener("storage", syncStoredPreference);
-  }, []);
-
   const setTheme = useCallback((value: Theme) => {
-    setPreference({ theme: value, explicit: true });
+    writeTheme(value);
   }, []);
 
   const toggleTheme = useCallback(() => {
-    setPreference({ theme: "dark", explicit: true });
+    writeTheme(readTheme() === "dark" ? "light" : "dark");
   }, []);
 
   const value = useMemo(

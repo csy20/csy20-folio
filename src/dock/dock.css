@@ -6,10 +6,18 @@
   src: url("/fonts/space-grotesk.woff2") format("woff2");
 }
 
-:root,
-[data-theme="dark"],
-.dock-shell,
-.dock-sound-toggle {
+:root {
+  --bg-primary: #f6f5f1;
+  --surface-soft: #eeede7;
+  --text-primary: #191a1b;
+  --text-secondary: #5c5d59;
+  --focus-ring: #b8462a;
+  --dock-bg: rgba(255, 255, 252, 0.96);
+  --dock-border: rgba(25, 26, 27, 0.17);
+  --dock-hover: #eae9e2;
+}
+
+[data-theme="dark"] {
   --bg-primary: #111214;
   --surface-soft: #202225;
   --text-primary: #f4f2ed;
