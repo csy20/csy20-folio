@@ -64,7 +64,8 @@ function readFace(): ClockFace {
     ss,
     hourAngle: ((hours % 12) + minutes / 60) * 30,
     minuteAngle: (minutes + seconds / 60) * 6,
-    secondAngle: seconds * 6,
+    // Epoch-based so the angle only ever grows; it never snaps back at 60s.
+    secondAngle: Math.floor(now.getTime() / 1000) * 6,
     dateTime: `${hh}:${mm}:${ss}`,
   };
   return face;
@@ -91,7 +92,6 @@ function RunningClock() {
   const time = useSyncExternalStore(subscribe, readFace, () => emptyFace);
   const hour = hand(time.hourAngle, 6);
   const minute = hand(time.minuteAngle, 9);
-  const second = hand(time.secondAngle, 11);
 
   return (
     <time
@@ -133,15 +133,23 @@ function RunningClock() {
           strokeWidth="1.2"
           strokeLinecap="round"
         />
-        <line
-          x1="16"
-          y1="16"
-          x2={second.x2}
-          y2={second.y2}
-          stroke="var(--accent)"
-          strokeWidth="0.9"
-          strokeLinecap="round"
-        />
+        <g
+          className="clock-second"
+          style={{
+            transform: `rotate(${time.secondAngle}deg)`,
+            transformOrigin: "16px 16px",
+          }}
+        >
+          <line
+            x1="16"
+            y1="16"
+            x2="16"
+            y2="5"
+            stroke="var(--accent)"
+            strokeWidth="0.9"
+            strokeLinecap="round"
+          />
+        </g>
         <circle cx="16" cy="16" r="1.2" fill="currentColor" />
       </svg>
       <span className="flex flex-col items-start">

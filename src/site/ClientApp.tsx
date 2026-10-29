@@ -1,11 +1,13 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "motion/react";
 import { useCallback, useSyncExternalStore, useState, type ReactNode } from "react";
 import { CountUp } from "@/site/CountUp";
 import { IndiaClock } from "@/site/IndiaClock";
 import { PipelineSchematic } from "@/site/PipelineSchematic";
 import { ScrollProgress } from "./ScrollProgress";
+import { SectionNav } from "./SectionNav";
 import { Opening, usePrefersReducedMotion } from "@/site/Opening";
 import { SocialDock } from "@/dock/SocialDock";
 import { SoundToggle } from "@/dock/SoundToggle";
@@ -15,6 +17,7 @@ import {
   mergedContributionRepositories,
   mergedContributionSummary,
   mergedContributions,
+  describeContributionTimeline,
 } from "@/data/contributions";
 import {
   portraits,
@@ -22,6 +25,7 @@ import {
   projects,
   resumeUrl,
   socialLinks,
+  speechRelayMetrics,
   type Project,
 } from "@/data/siteContent";
 
@@ -63,7 +67,7 @@ const metrics: Record<string, string> = {
   "02_OS": "Public alpha · v2026.10.01",
   Bytewise: "Live on Google Play",
   Nen: "Live on Google Play",
-  "Speech Relay": "2505 ms mean · 2580 ms p50",
+  "Speech Relay": `${speechRelayMetrics.profile.meanMs} ms mean · ${speechRelayMetrics.profile.p50Ms} ms p50`,
   "Speech Relay Rust": "LoRA · ONNX int8 · Rust",
   "MediaPipe AI": "Five containers · 500 MB uploads",
   "Router Agent": "AMD hackathon",
@@ -77,7 +81,7 @@ const blurbs: Record<string, string> = {
     "Production Flutter app on Google Play: 788+ DSA and system-design lessons, offline-first.",
   Nen: "Offline music player for the files already on your phone. No streaming, no ads, no account.",
   "Speech Relay":
-    "Streaming ASR → MT → TTS over WebRTC, English to Hindi. Silero-VAD cut a separate comparison from 4708 ms mean to 3597 ms, 23.6% lower.",
+    `Streaming ASR → MT → TTS over WebRTC, English to Hindi. Silero-VAD cut a separate comparison from ${speechRelayMetrics.vadComparison.fixedWindowMs} ms mean to ${speechRelayMetrics.vadComparison.vadMs} ms, ${speechRelayMetrics.vadComparison.reductionPercent}% lower.`,
   "Speech Relay Rust":
     "Whisper fine-tuned with LoRA for Hindi–English code-mix, merged, exported to ONNX, quantized to int8, and served from Rust.",
   "MediaPipe AI":
@@ -229,21 +233,61 @@ function ContributionList({
 }) {
   return (
     <ol>
-      {records.map((record) => (
-        <li key={record.url} className="draw-row border-t border-[var(--line)]">
-          <ExternalLink href={record.url} className="page-link group block py-4">
-            <span className="flex items-center gap-2 font-mono text-[12px] text-[var(--ink-faint)]">
-              <span className="rounded border border-[var(--line)] px-1.5 text-[10px] text-[var(--pr)]">
-                merged
-              </span>
-              {record.repository}#{record.number} · {formatContributionDate(getContributionDate(record))}
-            </span>
-            <span className="draw-link mt-1 inline-block max-w-full text-[15px] leading-6 group-hover:text-[var(--hover)]">
-              {record.title}
-            </span>
-          </ExternalLink>
-        </li>
-      ))}
+      {records.map((record) => {
+        const timeline = describeContributionTimeline(record);
+        return (
+          <li key={record.url} className="draw-row border-t border-[var(--line)]">
+            <details className="group/pr">
+              <summary className="flex cursor-pointer list-none items-start justify-between gap-4 py-4 marker:content-none [&::-webkit-details-marker]:hidden">
+                <span className="min-w-0">
+                  <span className="flex items-center gap-2 font-mono text-[12px] text-[var(--ink-faint)]">
+                    <span className="rounded border border-[var(--line)] px-1.5 text-[10px] text-[var(--pr)]">
+                      merged
+                    </span>
+                    {record.repository}#{record.number} · {formatContributionDate(getContributionDate(record))}
+                  </span>
+                  <span className="draw-link mt-1 inline-block max-w-full text-[15px] leading-6">
+                    {record.title}
+                  </span>
+                </span>
+                <span
+                  aria-hidden="true"
+                  className="mt-1 font-mono text-[14px] leading-none text-[var(--ink-faint)] transition-transform group-open/pr:rotate-45"
+                >
+                  +
+                </span>
+              </summary>
+              <div className="show-all-panel">
+                <div>
+                  <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 pb-3 font-mono text-[12px] text-[var(--ink-soft)]">
+                    <dt className="text-[var(--ink-faint)]">Opened</dt>
+                    <dd>{timeline.opened}</dd>
+                    {timeline.merged ? (
+                      <>
+                        <dt className="text-[var(--ink-faint)]">Merged</dt>
+                        <dd>
+                          {timeline.merged}
+                          {timeline.daysToMerge !== null
+                            ? timeline.daysToMerge === 0
+                              ? " · same day"
+                              : ` · after ${timeline.daysToMerge} ${timeline.daysToMerge === 1 ? "day" : "days"}`
+                            : null}
+                        </dd>
+                      </>
+                    ) : null}
+                  </dl>
+                  <ExternalLink
+                    href={record.url}
+                    className="page-link mb-4 inline-block text-[13px] text-[var(--ink-soft)] underline-offset-4 hover:underline"
+                  >
+                    View pull request on GitHub
+                  </ExternalLink>
+                </div>
+              </div>
+            </details>
+          </li>
+        );
+      })}
     </ol>
   );
 }
@@ -276,7 +320,7 @@ function ProjectRow({
       }}
     >
       {project.logo ? (
-        <img
+        <Image
           src={project.logo}
           alt=""
           width={64}
@@ -336,13 +380,14 @@ export function ClientApp() {
         className="mx-auto w-full max-w-[48rem] px-6 pt-14 pb-36 outline-none sm:pt-20"
       >
         <motion.header
-          className="reveal flex items-center justify-between gap-4 text-[14px]"
+          className="reveal sticky top-0 z-40 flex items-center justify-between gap-4 bg-[var(--page-bg)] py-3 text-[14px] [box-shadow:0_0_0_100vmax_var(--page-bg)] [clip-path:inset(0_-100vmax)]"
           {...enter(play, 0)}
         >
           <a href="#hero" className="page-link tracking-[-0.02em]">
             csy20
           </a>
           <div className="flex items-center gap-5">
+            <SectionNav />
             <IndiaClock />
             <ExternalLink
               href={resumeUrl}
@@ -391,7 +436,7 @@ export function ClientApp() {
             <div className="mt-10 grid gap-x-6 gap-y-5 sm:grid-cols-3">
               <a href="#speech-relay" className="page-link border-t border-[var(--line)] pt-3">
                 <strong className="block text-[15px] font-medium tracking-[-0.02em]">
-                  <CountUp to={23.6} decimals={1} active={play} />% less latency
+                  <CountUp to={speechRelayMetrics.vadComparison.reductionPercent} decimals={1} active={play} />% less latency
                 </strong>
                 <span className="mt-1 block text-[13px] leading-5 text-[var(--ink-faint)]">
                   Speech Relay · VAD vs fixed windows

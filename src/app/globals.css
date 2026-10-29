@@ -8,6 +8,7 @@
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 72px;
   scroll-padding-bottom: 120px;
 }
 
@@ -63,6 +64,11 @@ body {
   color: var(--hover);
 }
 
+summary:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
 .page-link:focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: 3px;
@@ -87,6 +93,7 @@ html.is-opening main {
 
 .work-logo {
   transform-origin: center;
+  box-shadow: 0 0 0 1px var(--line);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -186,6 +193,11 @@ details[open] > .show-all-panel {
   animation: colon-blink 1s steps(1, end) infinite;
 }
 
+.clock-second {
+  transition: transform 1s linear;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .clock-colon { animation: none !important; }
+  .clock-second { transition: none !important; }
 }

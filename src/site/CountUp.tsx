@@ -43,7 +43,7 @@ export function CountUp({
   );
   const value = useMotionValue(0);
   const text = useTransform(value, (latest) => formatCount(latest, decimals));
-  const width = `${formatCount(to, decimals).length}ch`;
+  const finalText = formatCount(to, decimals);
 
   useEffect(() => {
     if (!active || !inView) return;
@@ -56,12 +56,19 @@ export function CountUp({
   }, [active, inView, reduced, to, value]);
 
   return (
-    <motion.span
-      ref={ref}
-      className="inline-block text-left tabular-nums"
-      style={{ minWidth: width }}
-    >
-      {text}
-    </motion.span>
+    <span className="inline-grid tabular-nums">
+      <span
+        aria-hidden="true"
+        className="invisible pointer-events-none col-start-1 row-start-1 select-none"
+      >
+        {finalText}
+      </span>
+      <motion.span
+        ref={ref}
+        className="col-start-1 row-start-1 text-left"
+      >
+        {text}
+      </motion.span>
+    </span>
   );
 }
