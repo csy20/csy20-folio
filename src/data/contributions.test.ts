@@ -8,6 +8,7 @@ import {
   contributionSummary,
   contributions,
   curatedContributionExclusions,
+  describeContributionTimeline,
   formatContributionDate,
   getContributionDate,
   getContributionStatus,
@@ -130,5 +131,31 @@ describe("local contribution evidence", () => {
       closed: 0,
       repositories: 0,
     });
+  });
+});
+
+describe("describeContributionTimeline", () => {
+  it("reports how long a merged pull request took", () => {
+    expect(
+      describeContributionTimeline({
+        createdAt: "2026-10-10T08:00:00Z",
+        mergedAt: "2026-10-13T08:00:00Z",
+      }),
+    ).toEqual({ opened: "10 Oct 2026", merged: "13 Oct 2026", daysToMerge: 3 });
+  });
+
+  it("reports zero days for a same-day merge", () => {
+    expect(
+      describeContributionTimeline({
+        createdAt: "2026-10-10T08:00:00Z",
+        mergedAt: "2026-10-10T20:00:00Z",
+      }).daysToMerge,
+    ).toBe(0);
+  });
+
+  it("has no merge details for an unmerged pull request", () => {
+    expect(
+      describeContributionTimeline({ createdAt: "2026-10-10T08:00:00Z", mergedAt: null }),
+    ).toEqual({ opened: "10 Oct 2026", merged: null, daysToMerge: null });
   });
 });
