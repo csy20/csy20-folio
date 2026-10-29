@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
+import { config } from "@/config";
 import { Providers } from "@/site/Providers";
 import "./globals.css";
 
@@ -14,9 +15,35 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const title = "Chitresh Yadav — Backend · Applied ML";
+const description = "Building useful software, from model to product.";
+
 export const metadata: Metadata = {
-  title: "Chitresh Yadav — Backend · Applied ML",
-  description: "Building useful software, from model to product.",
+  metadataBase: new URL(config.siteUrl),
+  title,
+  description,
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    url: "/",
+    siteName: "csy20",
+    title,
+    description,
+    images: [
+      {
+        url: "/portrait-twitter.jpg",
+        width: 736,
+        height: 736,
+        alt: "Illustrated portrait of Chitresh Yadav",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary",
+    title,
+    description,
+    images: ["/portrait-twitter.jpg"],
+  },
 };
 
 export const viewport: Viewport = {
@@ -40,7 +67,7 @@ const themeScript = `(() => {
     document.documentElement.classList.add("is-opening");
     window.setTimeout(() => {
       document.documentElement.classList.remove("is-opening");
-    }, 4000);
+    }, 2500);
   }
 })();`;
 

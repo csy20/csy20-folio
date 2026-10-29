@@ -1,4 +1,5 @@
 export const config = {
+  siteUrl: "https://csy20.me",
   githubUsername: "csy20",
   email: "chitreshy20@gmail.com",
   resumeUrl: "/csy20_resume.pdf",
