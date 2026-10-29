@@ -440,9 +440,8 @@ export function ClientApp() {
           <a href="#hero" className="page-link tracking-[-0.02em]">
             csy20
           </a>
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-3.5 sm:gap-5">
             <SectionNav />
-            <IndiaClock />
             <ExternalLink
               href={resumeUrl}
               className="page-link text-[var(--ink-faint)]"
@@ -454,10 +453,11 @@ export function ClientApp() {
               onClick={() => setPaletteOpen(true)}
               aria-label="Open command palette"
               aria-keyshortcuts="Control+K Meta+K"
-              className="folio-btn cursor-pointer rounded-md border border-[var(--line)] bg-[var(--card)] px-2 py-0.5 font-mono text-[11px] text-[var(--ink-faint)] transition-colors hover:border-[var(--ink-soft)] hover:text-[var(--ink)]"
+              className="folio-btn shrink-0 cursor-pointer rounded-md border border-[var(--line)] bg-[var(--card)] px-2 py-0.5 font-mono text-[11px] whitespace-nowrap text-[var(--ink-faint)] transition-colors hover:border-[var(--ink-soft)] hover:text-[var(--ink)]"
             >
-              ⌘K
+              Ctrl + K
             </button>
+            <IndiaClock />
           </div>
         </motion.header>
 

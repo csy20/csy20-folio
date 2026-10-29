@@ -536,7 +536,7 @@ export function CommandPalette({
 
         <div className="flex items-center justify-between border-t border-[var(--line)] px-4 py-2 font-mono text-[10px] text-[var(--ink-faint)]">
           <span>↑↓ navigate · ↵ run</span>
-          <span>⌘K or / anywhere</span>
+          <span>Ctrl + K or / anywhere</span>
         </div>
       </div>
     </dialog>

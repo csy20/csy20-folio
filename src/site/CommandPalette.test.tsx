@@ -10,7 +10,7 @@ afterEach(() => {
 });
 
 describe("CommandPalette", () => {
-  it("toggles via Ctrl+K shortcut", () => {
+  it("toggles via Ctrl+K and Meta+K shortcuts and renders Ctrl + K hint", () => {
     const onOpenChange = vi.fn();
     render(
       <CommandPalette
@@ -20,7 +20,13 @@ describe("CommandPalette", () => {
       />,
     );
 
+    expect(screen.getByText("Ctrl + K or / anywhere")).toBeInTheDocument();
+
     fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+    expect(onOpenChange).toHaveBeenCalledWith(true);
+
+    onOpenChange.mockClear();
+    fireEvent.keyDown(window, { key: "k", metaKey: true });
     expect(onOpenChange).toHaveBeenCalledWith(true);
   });
 
