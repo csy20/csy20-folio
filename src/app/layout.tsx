@@ -29,20 +29,11 @@ export const metadata: Metadata = {
     siteName: "csy20",
     title,
     description,
-    images: [
-      {
-        url: "/portrait-twitter.jpg",
-        width: 736,
-        height: 736,
-        alt: "Illustrated portrait of Chitresh Yadav",
-      },
-    ],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title,
     description,
-    images: ["/portrait-twitter.jpg"],
   },
 };
 
