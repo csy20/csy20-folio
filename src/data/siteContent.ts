@@ -75,6 +75,17 @@ export type SocialLink = {
   detail: string;
 };
 
+/**
+ * Speech Relay figures. The CPU profile and the VAD comparison are separate
+ * measurements, so they stay separate here.
+ */
+export const speechRelayMetrics = {
+  /** CPU profile across 11 utterances. */
+  profile: { meanMs: 2505, p50Ms: 2580, utterances: 11 },
+  /** Separate comparison: fixed-window baseline vs Silero-VAD. */
+  vadComparison: { fixedWindowMs: 4708, vadMs: 3597, reductionPercent: 23.6 },
+} as const;
+
 export const profile = {
   name: "Chitresh Yadav",
   handle: "csy20",
@@ -146,7 +157,7 @@ export const projects: Project[] = [
     title: "Speech Relay",
     eyebrow: "Realtime speech-to-speech",
     description:
-      "Streaming ASR → MT → TTS over WebRTC (EN→HI). A CPU profile measured 2505 ms mean / 2580 ms p50 across 11 utterances. In a separate VAD comparison, mean latency fell from 4708 ms to 3597 ms (23.6%). One shared ASR stream fans out to multiple listeners; a WER/CER eval harness tracks recognition quality.",
+      `Streaming ASR → MT → TTS over WebRTC (EN→HI). A CPU profile measured ${speechRelayMetrics.profile.meanMs} ms mean / ${speechRelayMetrics.profile.p50Ms} ms p50 across ${speechRelayMetrics.profile.utterances} utterances. In a separate VAD comparison, mean latency fell from ${speechRelayMetrics.vadComparison.fixedWindowMs} ms to ${speechRelayMetrics.vadComparison.vadMs} ms (${speechRelayMetrics.vadComparison.reductionPercent}%). One shared ASR stream fans out to multiple listeners; a WER/CER eval harness tracks recognition quality.`,
     tags: [
       "Python",
       "faster-whisper",
@@ -157,7 +168,7 @@ export const projects: Project[] = [
     ],
     group: "selected",
     logo: "/logos/speech-relay.svg",
-    spotlight: "2505 ms mean E2E",
+    spotlight: `${speechRelayMetrics.profile.meanMs} ms mean E2E`,
     releaseNote:
       "Silero-VAD replaced fixed-window flushing. Benchmark context and results are linked in the engineering notes.",
     links: [
@@ -353,7 +364,7 @@ export const caseStudies: CaseStudy[] = [
     decision:
       "Let speech boundaries drive the pipeline. Silero-VAD replaces fixed-window flushing to reduce the wait between speaking and hearing a translation.",
     outcome:
-      "23.6% lower mean latency in the separate VAD comparison: 4,708 ms fixed-window → 3,597 ms VAD.",
+      `${speechRelayMetrics.vadComparison.reductionPercent}% lower mean latency in the separate VAD comparison: ${speechRelayMetrics.vadComparison.fixedWindowMs.toLocaleString("en-US")} ms fixed-window → ${speechRelayMetrics.vadComparison.vadMs.toLocaleString("en-US")} ms VAD.`,
     detail:
       "The full-pipeline CPU profile measured 2,505 ms mean and 2,580 ms p50 across 11 utterances using faster-whisper tiny/int8, OPUS-MT, and edge-tts. These profile measurements are separate from the VAD comparison. A shared ASR stream fans out to multiple listeners; WER/CER evaluation tracks recognition quality alongside timing.",
   },

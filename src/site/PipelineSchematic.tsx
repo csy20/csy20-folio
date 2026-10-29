@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
+import { speechRelayMetrics } from "@/data/siteContent";
 
 const hops = ["Mic", "VAD", "ASR", "MT", "TTS", "WebRTC out"] as const;
 
@@ -22,7 +23,7 @@ export function PipelineSchematic() {
   return (
     <figure
       className="mt-4 flex flex-wrap items-end justify-between gap-4 rounded-xl border border-[var(--line)] bg-[var(--logo-well)] p-3"
-      aria-label="Speech Relay pipeline: Mic, VAD, ASR, MT, TTS, WebRTC out. 2505 ms mean end to end."
+      aria-label={`Speech Relay pipeline: Mic, VAD, ASR, MT, TTS, WebRTC out. ${speechRelayMetrics.profile.meanMs} ms mean end to end.`}
     >
       <ol className="flex flex-wrap items-center gap-y-2 font-mono text-[11px] text-[var(--ink-soft)]">
         {hops.map((hop, index) => (
@@ -42,7 +43,8 @@ export function PipelineSchematic() {
       </ol>
       <div className="text-right font-mono leading-none">
         <span className="block text-[1.6rem] tracking-[-0.04em] text-[var(--accent)] tabular-nums">
-          2505<span className="ml-1 text-[11px] text-[var(--ink-faint)]">ms</span>
+          {speechRelayMetrics.profile.meanMs}
+          <span className="ml-1 text-[11px] text-[var(--ink-faint)]">ms</span>
         </span>
         <span className="mt-1 block text-[10px] tracking-[0.12em] text-[var(--ink-faint)] uppercase">
           mean end to end

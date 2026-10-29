@@ -102,3 +102,16 @@ export function formatContributionDate(value: string): string {
     timeZone: "UTC",
   }).format(new Date(value));
 }
+
+export function describeContributionTimeline(
+  record: Pick<Contribution, "createdAt" | "mergedAt">,
+): { opened: string; merged: string | null; daysToMerge: number | null } {
+  const opened = formatContributionDate(record.createdAt);
+  if (!record.mergedAt) return { opened, merged: null, daysToMerge: null };
+  const elapsed = Date.parse(record.mergedAt) - Date.parse(record.createdAt);
+  return {
+    opened,
+    merged: formatContributionDate(record.mergedAt),
+    daysToMerge: Math.max(0, Math.floor(elapsed / 86_400_000)),
+  };
+}
