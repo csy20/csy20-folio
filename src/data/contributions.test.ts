@@ -11,6 +11,7 @@ import {
   describeContributionTimeline,
   formatContributionDate,
   getContributionDate,
+  getContributionDomId,
   getContributionStatus,
   summarizeContributions,
 } from "./contributions";
@@ -157,5 +158,13 @@ describe("describeContributionTimeline", () => {
     expect(
       describeContributionTimeline({ createdAt: "2026-10-10T08:00:00Z", mergedAt: null }),
     ).toEqual({ opened: "10 Oct 2026", merged: null, daysToMerge: null });
+  });
+});
+
+describe("getContributionDomId", () => {
+  it("builds stable DOM ids for contributions", () => {
+    expect(
+      getContributionDomId({ repository: "redhat-et/ripwire", number: 244 }),
+    ).toBe("pr-redhat-et-ripwire-244");
   });
 });

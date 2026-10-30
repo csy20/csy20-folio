@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { motion } from "motion/react";
 import { useCallback, useSyncExternalStore, useState, type ReactNode } from "react";
+import { config } from "@/config";
 import { CountUp } from "@/site/CountUp";
 import { IndiaClock } from "@/site/IndiaClock";
 import { PipelineSchematic } from "@/site/PipelineSchematic";
@@ -12,7 +13,6 @@ import {
   parseNoteHash,
   type EngineeringNoteId,
 } from "./CaseStudyDialog";
-import { CommandPalette, getContributionDomId } from "./CommandPalette";
 import { ScrollProgress } from "./ScrollProgress";
 import { SectionNav } from "./SectionNav";
 import { Opening, usePrefersReducedMotion } from "@/site/Opening";
@@ -21,6 +21,7 @@ import { SoundToggle } from "@/dock/SoundToggle";
 import {
   formatContributionDate,
   getContributionDate,
+  getContributionDomId,
   mergedContributionRepositories,
   mergedContributionSummary,
   mergedContributions,
@@ -393,7 +394,6 @@ export function ClientApp() {
   const contactLinks = socialLinks.filter((link) => link.icon !== "email");
   const reducedMotion = usePrefersReducedMotion();
   const [opened, setOpened] = useState(false);
-  const [paletteOpen, setPaletteOpen] = useState(false);
   const activeNote = useSyncExternalStore(
     subscribeToNoteHash,
     readNoteHash,
@@ -444,19 +444,10 @@ export function ClientApp() {
             <SectionNav />
             <ExternalLink
               href={resumeUrl}
-              className="page-link text-[var(--ink-faint)]"
+              className="page-link border-b border-transparent pb-0.5 text-[13px] text-[var(--ink-faint)] transition-colors"
             >
               Resume
             </ExternalLink>
-            <button
-              type="button"
-              onClick={() => setPaletteOpen(true)}
-              aria-label="Open command palette"
-              aria-keyshortcuts="Control+K Meta+K"
-              className="folio-btn shrink-0 cursor-pointer rounded-md border border-[var(--line)] bg-[var(--card)] px-2 py-0.5 font-mono text-[11px] whitespace-nowrap text-[var(--ink-faint)] transition-colors hover:border-[var(--ink-soft)] hover:text-[var(--ink)]"
-            >
-              Ctrl + K
-            </button>
             <IndiaClock />
           </div>
         </motion.header>
@@ -523,7 +514,7 @@ export function ClientApp() {
               </a>
             </div>
             <div className="mt-8 flex gap-6 text-[14px]">
-              <a href="mailto:chitreshy20@gmail.com" className="page-link">
+              <a href={`mailto:${config.email}`} className="page-link">
                 Email
               </a>
               <ExternalLink href={resumeUrl} className="page-link text-[var(--ink-faint)]">
@@ -626,10 +617,10 @@ export function ClientApp() {
             <span id="contact-title">Contact</span>
           </SectionLabel>
           <a
-            href="mailto:chitreshy20@gmail.com"
+            href={`mailto:${config.email}`}
             className="page-link mt-6 block text-[1.7rem] tracking-[-0.03em] sm:text-[2rem]"
           >
-            chitreshy20@gmail.com
+            {config.email}
           </a>
           <p className="mt-3 text-[15px] text-[var(--ink-soft)]">{profile.availability}</p>
           <ul className="mt-8 flex flex-col">
@@ -664,11 +655,6 @@ export function ClientApp() {
       </main>
       <Opening onLeave={onLeave} />
       <AfterMount>
-        <CommandPalette
-          open={paletteOpen}
-          onOpenChange={setPaletteOpen}
-          onOpenNote={openNote}
-        />
         <CaseStudyDialog noteId={activeNote} onClose={closeNote} />
         {play ? <SocialDock /> : null}
       </AfterMount>

@@ -14,6 +14,12 @@ export type Contribution = {
   mergedAt: string | null;
 };
 
+export function getContributionDomId(
+  record: Pick<Contribution, "repository" | "number">,
+) {
+  return `pr-${record.repository.replace(/[^a-zA-Z0-9_-]/g, "-")}-${record.number}`;
+}
+
 export type ContributionSummary = {
   total: number;
   merged: number;
