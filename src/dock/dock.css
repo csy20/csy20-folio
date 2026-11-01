@@ -11,7 +11,7 @@
   --surface-soft: #eeede7;
   --text-primary: #191a1b;
   --text-secondary: #5c5d59;
-  --focus-ring: #b8462a;
+  --focus-ring: var(--accent, #0284c7);
   --dock-bg: rgba(255, 255, 252, 0.96);
   --dock-border: rgba(25, 26, 27, 0.17);
   --dock-hover: #eae9e2;
@@ -22,7 +22,7 @@
   --surface-soft: #202225;
   --text-primary: #f4f2ed;
   --text-secondary: #b7b5ae;
-  --focus-ring: #ff9d7a;
+  --focus-ring: var(--accent, #38bdf8);
   --dock-bg: rgba(17, 18, 20, 0.96);
   --dock-border: rgba(244, 242, 237, 0.14);
   --dock-hover: #353638;

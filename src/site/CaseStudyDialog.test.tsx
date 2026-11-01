@@ -40,4 +40,37 @@ describe("CaseStudyDialog", () => {
     expect(screen.getByText("Your music. On your phone.")).toBeInTheDocument();
     expect(screen.getByText("Offline local playback")).toBeInTheDocument();
   });
+
+  it("cycles adjacent notes with prev/next buttons and arrow keys", () => {
+    const onNavigate = vi.fn();
+    const { rerender } = render(
+      <CaseStudyDialog
+        noteId="speech-relay"
+        onClose={vi.fn()}
+        onNavigate={onNavigate}
+      />,
+    );
+
+    expect(screen.getByText("1 / 4")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Previous note: Nen" }));
+    expect(onNavigate).toHaveBeenLastCalledWith("nen");
+
+    fireEvent.click(screen.getByRole("button", { name: "Next note: 02_OS" }));
+    expect(onNavigate).toHaveBeenLastCalledWith("02-os");
+
+    rerender(
+      <CaseStudyDialog
+        noteId="nen"
+        onClose={vi.fn()}
+        onNavigate={onNavigate}
+      />,
+    );
+
+    fireEvent.keyDown(window, { key: "ArrowRight" });
+    expect(onNavigate).toHaveBeenLastCalledWith("speech-relay");
+
+    fireEvent.keyDown(window, { key: "ArrowLeft" });
+    expect(onNavigate).toHaveBeenLastCalledWith("bytewise");
+  });
 });

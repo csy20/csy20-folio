@@ -114,9 +114,14 @@ export function SocialDock() {
         type="button"
         aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
         {...controlMotion(dockLinks.length + 1)}
-        onClick={() => {
+        onClick={(event) => {
           playDockTick();
-          toggleTheme();
+          const rect = event.currentTarget.getBoundingClientRect();
+          const origin =
+            rect.width > 0 && rect.height > 0
+              ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
+              : undefined;
+          toggleTheme(origin);
         }}
       >
         {icon(theme === "dark" ? <SunIcon /> : <MoonIcon />)}

@@ -59,6 +59,21 @@ function resolveNote(id: EngineeringNoteId): ResolvedNote {
   throw new Error(`Unknown engineering note: ${id}`);
 }
 
+function getAdjacentNotes(id: EngineeringNoteId) {
+  const index = ENGINEERING_NOTE_IDS.indexOf(id);
+  const total = ENGINEERING_NOTE_IDS.length;
+  const prevId = ENGINEERING_NOTE_IDS[(index - 1 + total) % total];
+  const nextId = ENGINEERING_NOTE_IDS[(index + 1) % total];
+  return {
+    index,
+    total,
+    prevId,
+    nextId,
+    prevTitle: resolveNote(prevId).project.title,
+    nextTitle: resolveNote(nextId).project.title,
+  };
+}
+
 function openModalDialog(dialog: HTMLDialogElement) {
   if (dialog.open) return;
   if (typeof dialog.showModal === "function") {
@@ -88,9 +103,11 @@ function closeModalDialog(dialog: HTMLDialogElement) {
 export function CaseStudyDialog({
   noteId,
   onClose,
+  onNavigate,
 }: {
   noteId: EngineeringNoteId | null;
   onClose: () => void;
+  onNavigate?: (id: EngineeringNoteId) => void;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -99,12 +116,35 @@ export function CaseStudyDialog({
     if (!dialog) return;
     if (noteId) {
       openModalDialog(dialog);
+      dialog.scrollTop = 0;
     } else {
       closeModalDialog(dialog);
     }
   }, [noteId]);
 
+  useEffect(() => {
+    if (!noteId || !onNavigate) return;
+    const { prevId, nextId } = getAdjacentNotes(noteId);
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+        return;
+      }
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        onNavigate(prevId);
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        onNavigate(nextId);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [noteId, onNavigate]);
+
   const resolved = noteId ? resolveNote(noteId) : null;
+  const adjacent = noteId ? getAdjacentNotes(noteId) : null;
 
   // Fallback light-dismiss for browsers without `<dialog closedby="any">` (e.g. Safari).
   const handleBackdropClick = (event: MouseEvent<HTMLDialogElement>) => {
@@ -127,10 +167,14 @@ export function CaseStudyDialog({
       aria-labelledby={resolved ? "case-study-dialog-title" : undefined}
       onClose={onClose}
       onClick={handleBackdropClick}
-      className="folio-dialog m-auto max-h-[85vh] w-[min(36rem,calc(100vw-2rem))] rounded-2xl shadow-2xl"
+      className="folio-dialog m-auto max-h-[90dvh] w-[min(36rem,calc(100vw-2rem))] overflow-y-auto rounded-2xl shadow-2xl max-sm:mb-0 max-sm:mt-auto max-sm:max-h-[88dvh] max-sm:w-full max-sm:max-w-none max-sm:rounded-t-2xl max-sm:rounded-b-none"
     >
       {resolved ? (
-        <div className="p-5 sm:p-6">
+        <div className="p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-5">
+          <div
+            aria-hidden="true"
+            className="mx-auto mb-3.5 h-1 w-9 rounded-full bg-[var(--line)] sm:hidden"
+          />
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="font-mono text-[11px] tracking-[0.08em] text-[var(--ink-faint)] uppercase">
@@ -151,7 +195,10 @@ export function CaseStudyDialog({
               aria-label="Close engineering notes"
               className="folio-btn cursor-pointer rounded-lg border border-[var(--line)] bg-[var(--card)] px-2.5 py-1 font-mono text-[11px] text-[var(--ink-faint)] transition-colors hover:text-[var(--ink)]"
             >
-              Esc
+              <span className="[@media(pointer:coarse)]:hidden">Esc</span>
+              <span className="hidden [@media(pointer:coarse)]:inline">
+                × Close
+              </span>
             </button>
           </div>
 
@@ -170,7 +217,7 @@ export function CaseStudyDialog({
           </ul>
 
           {resolved.kind === "case-study" ? (
-            <dl className="mt-5 space-y-4 text-[14px] leading-6">
+            <dl className="mt-4 space-y-3.5 text-[14px] leading-6">
               <div>
                 <dt className="font-mono text-[11px] tracking-[0.08em] text-[var(--ink-faint)] uppercase">
                   Overview
@@ -223,7 +270,7 @@ export function CaseStudyDialog({
             </div>
           )}
 
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--line)] pt-4">
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--line)] pt-3.5">
             {resolved.project.releaseNote ? (
               <p className="max-w-[38ch] font-mono text-[11px] leading-4 text-[var(--ink-faint)]">
                 {resolved.project.releaseNote}
@@ -245,6 +292,33 @@ export function CaseStudyDialog({
               ))}
             </div>
           </div>
+
+          {adjacent && onNavigate ? (
+            <nav
+              aria-label="Engineering notes pagination"
+              className="mt-3.5 flex items-center justify-between gap-2 border-t border-[var(--line)] pt-3 font-mono text-[12px]"
+            >
+              <button
+                type="button"
+                onClick={() => onNavigate(adjacent.prevId)}
+                aria-label={`Previous note: ${adjacent.prevTitle}`}
+                className="folio-btn cursor-pointer text-[var(--ink-soft)] transition-colors hover:text-[var(--ink)]"
+              >
+                ← {adjacent.prevTitle}
+              </button>
+              <span className="text-[11px] tabular-nums text-[var(--ink-faint)]">
+                {adjacent.index + 1} / {adjacent.total}
+              </span>
+              <button
+                type="button"
+                onClick={() => onNavigate(adjacent.nextId)}
+                aria-label={`Next note: ${adjacent.nextTitle}`}
+                className="folio-btn cursor-pointer text-[var(--ink-soft)] transition-colors hover:text-[var(--ink)]"
+              >
+                {adjacent.nextTitle} →
+              </button>
+            </nav>
+          ) : null}
         </div>
       ) : null}
     </dialog>

@@ -83,7 +83,12 @@ function subscribeMounted() {
 export function IndiaClock() {
   const mounted = useSyncExternalStore(subscribeMounted, () => true, () => false);
   if (!mounted) {
-    return <span className="inline-block h-8 w-[7rem]" aria-hidden="true" />;
+    return (
+      <span
+        className="inline-block h-6 w-[4.1rem] sm:h-8 sm:w-[7rem]"
+        aria-hidden="true"
+      />
+    );
   }
   return <RunningClock />;
 }
@@ -96,7 +101,7 @@ function RunningClock() {
   return (
     <time
       dateTime={time.dateTime || undefined}
-      className="inline-flex items-center gap-2 text-[var(--ink)]"
+      className="inline-flex shrink-0 items-center gap-1.5 text-[var(--ink)] sm:gap-2"
       aria-label={`${time.hh}:${time.mm} India Standard Time`}
     >
       <svg
@@ -104,7 +109,7 @@ function RunningClock() {
         height="32"
         viewBox="0 0 32 32"
         aria-hidden="true"
-        className="shrink-0"
+        className="h-6 w-6 shrink-0 sm:h-8 sm:w-8"
       >
         <circle
           cx="16"
@@ -153,16 +158,16 @@ function RunningClock() {
         <circle cx="16" cy="16" r="1.2" fill="currentColor" />
       </svg>
       <span className="flex flex-col items-start">
-        <span className="font-mono text-[13px] leading-none tabular-nums tracking-[0.04em]">
+        <span className="font-mono text-[12px] leading-none tabular-nums tracking-[0.04em] sm:text-[13px]">
           {time.hh}
           <span className="clock-colon">:</span>
           {time.mm}
-          <span className="text-[var(--ink-faint)]">
+          <span className="hidden text-[var(--ink-faint)] sm:inline">
             <span className="clock-colon">:</span>
             {time.ss}
           </span>
         </span>
-        <span className="mt-1 flex items-center gap-1.5 text-[9px] leading-none tracking-[0.18em] text-[var(--ink-faint)]">
+        <span className="mt-1 hidden items-center gap-1.5 text-[9px] leading-none tracking-[0.18em] text-[var(--ink-faint)] sm:flex">
           <span className="h-1 w-1 rounded-full bg-[var(--accent)]" aria-hidden="true" />
           IST · BHILAI
         </span>

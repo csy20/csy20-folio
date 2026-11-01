@@ -2,7 +2,14 @@
 
 import Image from "next/image";
 import { motion } from "motion/react";
-import { useCallback, useSyncExternalStore, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
 import { config } from "@/config";
 import { CountUp } from "@/site/CountUp";
 import { IndiaClock } from "@/site/IndiaClock";
@@ -13,20 +20,17 @@ import {
   parseNoteHash,
   type EngineeringNoteId,
 } from "./CaseStudyDialog";
+import { ContributionExplorer } from "./ContributionExplorer";
 import { ScrollProgress } from "./ScrollProgress";
 import { SectionNav } from "./SectionNav";
-import { Opening, usePrefersReducedMotion } from "@/site/Opening";
+import {
+  Opening,
+  useHasSeenOpening,
+  usePrefersReducedMotion,
+} from "@/site/Opening";
 import { SocialDock } from "@/dock/SocialDock";
 import { SoundToggle } from "@/dock/SoundToggle";
-import {
-  formatContributionDate,
-  getContributionDate,
-  getContributionDomId,
-  mergedContributionRepositories,
-  mergedContributionSummary,
-  mergedContributions,
-  describeContributionTimeline,
-} from "@/data/contributions";
+import { mergedContributionSummary } from "@/data/contributions";
 import {
   portraits,
   profile,
@@ -38,6 +42,7 @@ import {
 } from "@/data/siteContent";
 
 const featuredTitles = ["Speech Relay", "02_OS", "Bytewise", "Nen"] as const;
+const wideTitles = new Set<string>(["Speech Relay", "02_OS"]);
 
 const alsoTitles = [
   "Speech Relay Rust",
@@ -52,24 +57,6 @@ const alsoLines: Record<(typeof alsoTitles)[number], string> = {
   "Router Agent": "Picks a model before spending a token.",
   Warrant: "Asks before a production change.",
 };
-
-const featuredContributionUrls = [
-  "https://github.com/semantica-agi/semantica/pull/1922",
-  "https://github.com/redhat-et/ripwire/pull/244",
-  "https://github.com/internetarchive/openlibrary/pull/13611",
-] as const;
-
-const featuredContributionSet = new Set<string>(featuredContributionUrls);
-
-const featuredContributions = featuredContributionUrls.map((url) => {
-  const record = mergedContributions.find((item) => item.url === url);
-  if (!record) throw new Error(`Missing contribution: ${url}`);
-  return record;
-});
-
-const moreContributions = mergedContributions.filter(
-  (record) => !featuredContributionSet.has(record.url),
-);
 
 const metrics: Record<string, string> = {
   "02_OS": "Public alpha · v2026.10.01",
@@ -147,6 +134,13 @@ function readNoteHash(): EngineeringNoteId | null {
   return parseNoteHash(window.location.hash);
 }
 
+function canUseClipboard(): boolean {
+  return (
+    typeof navigator !== "undefined" &&
+    typeof navigator.clipboard?.writeText === "function"
+  );
+}
+
 function AfterMount({ children }: { children: ReactNode }) {
   const mounted = useSyncExternalStore(
     subscribeToClient,
@@ -155,6 +149,48 @@ function AfterMount({ children }: { children: ReactNode }) {
   );
   if (!mounted) return null;
   return children;
+}
+
+function CopyEmailButton({ email }: { email: string }) {
+  const supported = useSyncExternalStore(
+    subscribeToClient,
+    canUseClipboard,
+    () => false,
+  );
+  const [copied, setCopied] = useState(false);
+  const timerRef = useRef<number>(0);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) window.clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  if (!supported) return null;
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(email);
+      setCopied(true);
+      if (timerRef.current) window.clearTimeout(timerRef.current);
+      timerRef.current = window.setTimeout(() => {
+        setCopied(false);
+      }, 1500);
+    } catch {
+      // Clipboard write may fail if permission is denied.
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      aria-label={copied ? "Email address copied" : "Copy email address"}
+      className="folio-btn inline-flex cursor-pointer items-center rounded-lg border border-[var(--line)] bg-[var(--card)] px-2.5 py-1 font-mono text-[11px] text-[var(--ink-soft)] transition-colors hover:border-[var(--accent)] hover:text-[var(--ink)]"
+    >
+      <span aria-live="polite">{copied ? "Copied ✓" : "Copy"}</span>
+    </button>
+  );
 }
 
 function findProject(title: string): Project {
@@ -226,11 +262,35 @@ function AlsoRow({ title }: { title: (typeof alsoTitles)[number] }) {
   const project = findProject(title);
   return (
     <article id={anchors[title]} className="draw-row border-t border-[var(--line)] py-3.5">
-      <div className="flex items-baseline justify-between gap-4">
-        <h3 className="draw-link text-[15px] font-medium tracking-[-0.02em]">
-          {project.title}
-        </h3>
-        <div className="flex shrink-0 gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          {project.logo ? (
+            <Image
+              src={project.logo}
+              alt=""
+              width={48}
+              height={48}
+              className="work-logo h-6 w-6 shrink-0 rounded-[0.45rem] bg-[var(--logo-well)] object-contain"
+            />
+          ) : null}
+          <h3 className="draw-link truncate text-[15px] font-medium tracking-[-0.02em]">
+            {project.title}
+          </h3>
+        </div>
+        <div className="flex shrink-0 items-center gap-3">
+          <ul
+            aria-label={`${project.title} technologies`}
+            className="hidden items-center gap-1.5 font-mono text-[11px] text-[var(--ink-faint)] sm:flex"
+          >
+            {project.tags.slice(0, 3).map((tag) => (
+              <li
+                key={tag}
+                className="rounded border border-[var(--line)] bg-[var(--card)] px-1.5 py-0.5"
+              >
+                {tag}
+              </li>
+            ))}
+          </ul>
           {project.links.map((link) => (
             <ExternalLink
               key={link.href}
@@ -242,76 +302,14 @@ function AlsoRow({ title }: { title: (typeof alsoTitles)[number] }) {
           ))}
         </div>
       </div>
-      <p className="mt-1 max-w-[46ch] text-[13px] leading-5 text-[var(--ink-soft)]">
+      <p
+        className={`mt-1.5 max-w-[46ch] text-[13px] leading-5 text-[var(--ink-soft)] ${
+          project.logo ? "sm:pl-[2.125rem]" : ""
+        }`}
+      >
         {alsoLines[title]}
       </p>
     </article>
-  );
-}
-
-function ContributionList({
-  records,
-}: {
-  records: typeof mergedContributions;
-}) {
-  return (
-    <ol>
-      {records.map((record) => {
-        const timeline = describeContributionTimeline(record);
-        return (
-          <li key={record.url} className="draw-row border-t border-[var(--line)]">
-            <details id={getContributionDomId(record)} className="group/pr">
-              <summary className="flex cursor-pointer list-none items-start justify-between gap-4 py-4 marker:content-none [&::-webkit-details-marker]:hidden">
-                <span className="min-w-0">
-                  <span className="flex items-center gap-2 font-mono text-[12px] text-[var(--ink-faint)]">
-                    <span className="rounded border border-[var(--line)] px-1.5 text-[10px] text-[var(--pr)]">
-                      merged
-                    </span>
-                    {record.repository}#{record.number} · {formatContributionDate(getContributionDate(record))}
-                  </span>
-                  <span className="draw-link mt-1 inline-block max-w-full text-[15px] leading-6">
-                    {record.title}
-                  </span>
-                </span>
-                <span
-                  aria-hidden="true"
-                  className="mt-1 font-mono text-[14px] leading-none text-[var(--ink-faint)] transition-transform group-open/pr:rotate-45"
-                >
-                  +
-                </span>
-              </summary>
-              <div className="show-all-panel">
-                <div>
-                  <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 pb-3 font-mono text-[12px] text-[var(--ink-soft)]">
-                    <dt className="text-[var(--ink-faint)]">Opened</dt>
-                    <dd>{timeline.opened}</dd>
-                    {timeline.merged ? (
-                      <>
-                        <dt className="text-[var(--ink-faint)]">Merged</dt>
-                        <dd>
-                          {timeline.merged}
-                          {timeline.daysToMerge !== null
-                            ? timeline.daysToMerge === 0
-                              ? " · same day"
-                              : ` · after ${timeline.daysToMerge} ${timeline.daysToMerge === 1 ? "day" : "days"}`
-                            : null}
-                        </dd>
-                      </>
-                    ) : null}
-                  </dl>
-                  <ExternalLink
-                    href={record.url}
-                    className="page-link mb-4 inline-block text-[13px] text-[var(--ink-soft)] underline-offset-4 hover:underline"
-                  >
-                    View pull request on GitHub
-                  </ExternalLink>
-                </div>
-              </div>
-            </details>
-          </li>
-        );
-      })}
-    </ol>
   );
 }
 
@@ -328,12 +326,14 @@ function ProjectRow({
 }) {
   const project = findProject(title);
   const noteId = getNoteIdForProjectTitle(title);
+  const isWide = wideTitles.has(title);
+
   return (
     <motion.article
       id={anchors[title]}
       key={play ? title : `${title}-wait`}
       className={`work-card group flex flex-col rounded-2xl border border-[var(--line)] bg-[var(--card)] p-4 ${
-        title === "Speech Relay" || title === "Nen" ? "sm:col-span-2" : ""
+        isWide ? "sm:col-span-2" : ""
       }`}
       initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
@@ -345,46 +345,110 @@ function ProjectRow({
         event.currentTarget.style.setProperty("--my", `${event.clientY - rect.top}px`);
       }}
     >
-      {project.logo ? (
-        <Image
-          src={project.logo}
-          alt=""
-          width={64}
-          height={64}
-          className={`work-logo h-11 w-11 rounded-[0.85rem] object-contain ${
-            title === "02_OS" ? "bg-white" : "bg-[var(--logo-well)]"
-          }`}
-        />
-      ) : null}
-      <h3 className="work-title mt-4 text-[1.05rem] font-medium tracking-[-0.02em] text-[var(--ink)]">
-        {project.title}
-      </h3>
-      <p className="mt-1.5 line-clamp-3 text-[13px] leading-5 text-[var(--ink-soft)]">
+      {isWide ? (
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3.5">
+            {project.logo ? (
+              <Image
+                src={project.logo}
+                alt=""
+                width={64}
+                height={64}
+                className={`work-logo h-11 w-11 shrink-0 rounded-[0.85rem] object-contain ${
+                  title === "02_OS" ? "bg-white" : "bg-[var(--logo-well)]"
+                }`}
+              />
+            ) : null}
+            <div className="min-w-0">
+              <h3 className="work-title text-[1.05rem] font-medium tracking-[-0.02em] text-[var(--ink)]">
+                {project.title}
+              </h3>
+              <p className="mt-0.5 truncate font-mono text-[11px] text-[var(--ink-faint)]">
+                {project.eyebrow}
+              </p>
+            </div>
+          </div>
+          {title === "02_OS" ? (
+            <ul
+              aria-label="02_OS technologies"
+              className="hidden shrink-0 items-center gap-1.5 font-mono text-[11px] text-[var(--ink-soft)] sm:flex"
+            >
+              {project.tags.map((tag) => (
+                <li
+                  key={tag}
+                  className="rounded-md border border-[var(--line)] bg-[var(--logo-well)] px-2 py-0.5"
+                >
+                  {tag}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : (
+        <>
+          {project.logo ? (
+            <Image
+              src={project.logo}
+              alt=""
+              width={64}
+              height={64}
+              className="work-logo h-11 w-11 rounded-[0.85rem] bg-[var(--logo-well)] object-contain"
+            />
+          ) : null}
+          <h3 className="work-title mt-4 text-[1.05rem] font-medium tracking-[-0.02em] text-[var(--ink)]">
+            {project.title}
+          </h3>
+        </>
+      )}
+
+      <p
+        className={`text-[13px] leading-5 text-[var(--ink-soft)] ${
+          isWide ? "mt-3 max-w-[64ch]" : "mt-1.5 line-clamp-3"
+        }`}
+      >
         {blurbs[title]}
       </p>
+
       {title === "Speech Relay" ? <PipelineSchematic /> : null}
-      <p className="mt-3 font-mono text-[11px] leading-4 text-[var(--ink-faint)]">
-        {metrics[title]}
-      </p>
-      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
-        {noteId ? (
-          <button
-            type="button"
-            onClick={() => onOpenNote(noteId)}
-            className="folio-btn cursor-pointer text-[12px] font-medium text-[var(--accent)] underline-offset-4 hover:underline"
-          >
-            Engineering notes
-          </button>
-        ) : null}
-        {project.links.map((link) => (
-          <ExternalLink
-            key={link.href}
-            href={link.href}
-            className="page-link text-[12px] text-[var(--ink-soft)] underline-offset-4 hover:underline"
-          >
-            {link.label}
-          </ExternalLink>
-        ))}
+
+      <div
+        className={`mt-auto pt-3 ${
+          isWide
+            ? "flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+            : ""
+        }`}
+      >
+        <p
+          className={`font-mono text-[11px] leading-4 text-[var(--ink-faint)] ${
+            isWide ? "sm:order-2" : ""
+          }`}
+        >
+          {metrics[title]}
+        </p>
+        <div
+          className={`flex flex-wrap items-center gap-x-3 gap-y-1 ${
+            isWide ? "sm:order-1" : "mt-2.5"
+          }`}
+        >
+          {noteId ? (
+            <button
+              type="button"
+              onClick={() => onOpenNote(noteId)}
+              className="folio-btn cursor-pointer text-[12px] font-medium text-[var(--accent)] underline-offset-4 hover:underline"
+            >
+              Engineering notes
+            </button>
+          ) : null}
+          {project.links.map((link) => (
+            <ExternalLink
+              key={link.href}
+              href={link.href}
+              className="page-link text-[12px] text-[var(--ink-soft)] underline-offset-4 hover:underline"
+            >
+              {link.label}
+            </ExternalLink>
+          ))}
+        </div>
       </div>
     </motion.article>
   );
@@ -393,13 +457,14 @@ function ProjectRow({
 export function ClientApp() {
   const contactLinks = socialLinks.filter((link) => link.icon !== "email");
   const reducedMotion = usePrefersReducedMotion();
+  const seenOpening = useHasSeenOpening();
   const [opened, setOpened] = useState(false);
   const activeNote = useSyncExternalStore(
     subscribeToNoteHash,
     readNoteHash,
     () => null,
   );
-  const play = reducedMotion || opened;
+  const play = reducedMotion || seenOpening || opened;
   const onLeave = useCallback(() => {
     document.documentElement.classList.remove("is-opening");
     setOpened(true);
@@ -434,17 +499,17 @@ export function ClientApp() {
         className="mx-auto w-full max-w-[48rem] px-6 pt-14 pb-36 outline-none sm:pt-20"
       >
         <motion.header
-          className="reveal sticky top-0 z-40 flex items-center justify-between gap-4 bg-[var(--page-bg)] py-3 text-[14px] [box-shadow:0_0_0_100vmax_var(--page-bg)] [clip-path:inset(0_-100vmax)]"
+          className="site-header reveal sticky top-0 z-40 flex items-center justify-between gap-3 bg-[var(--page-bg)] py-3 text-[14px] [box-shadow:0_0_0_100vmax_var(--page-bg)] [clip-path:inset(0_-100vmax)]"
           {...enter(play, 0)}
         >
-          <a href="#hero" className="page-link tracking-[-0.02em]">
+          <a href="#hero" className="page-link shrink-0 tracking-[-0.02em]">
             csy20
           </a>
-          <div className="flex items-center gap-3.5 sm:gap-5">
+          <div className="flex items-center gap-2.5 sm:gap-5">
             <SectionNav />
             <ExternalLink
               href={resumeUrl}
-              className="page-link border-b border-transparent pb-0.5 text-[13px] text-[var(--ink-faint)] transition-colors"
+              className="page-link border-b border-transparent pb-0.5 text-[12.5px] text-[var(--ink-faint)] transition-colors sm:text-[13px]"
             >
               Resume
             </ExternalLink>
@@ -452,13 +517,13 @@ export function ClientApp() {
           </div>
         </motion.header>
 
-        <section id="hero" aria-labelledby="intro-heading" className="pt-16 sm:pt-24">
+        <section id="hero" aria-labelledby="intro-heading" className="pt-10 sm:pt-24">
           <motion.div className="reveal" {...enter(play, 0.08)}>
             <div className="flex items-center justify-between gap-5">
               <div className="min-w-0">
                 <h1
                   id="intro-heading"
-                  className="text-[2.7rem] leading-[0.96] font-medium tracking-[-0.045em] sm:text-[3.5rem]"
+                  className="text-[2.6rem] leading-[0.96] font-medium tracking-[-0.045em] sm:text-[3.5rem]"
                 >
                   {profile.name}
                 </h1>
@@ -479,47 +544,68 @@ export function ClientApp() {
             </div>
           </motion.div>
           <motion.div className="reveal" {...enter(play, 0.16)}>
-            <p className="mt-8 max-w-[16ch] text-[1.7rem] leading-[1.15] font-medium tracking-[-0.035em] sm:text-[2rem]">
+            <p className="mt-7 max-w-[16ch] text-[1.65rem] leading-[1.15] font-medium tracking-[-0.035em] sm:mt-8 sm:text-[2rem]">
               Building useful software, from model to product.
             </p>
-            <p className="mt-6 max-w-[46ch] text-[16px] leading-7 text-[var(--ink-soft)]">
+            <p className="mt-5 max-w-[46ch] text-[16px] leading-7 text-[var(--ink-soft)] sm:mt-6">
               {profile.heroDescription}
             </p>
           </motion.div>
           <motion.div className="reveal" {...enter(play, 0.26)}>
-            <div className="mt-10 grid gap-x-6 gap-y-5 sm:grid-cols-3">
+            <div className="mt-7 flex items-center gap-5 text-[14px]">
+              <a
+                href={`mailto:${config.email}`}
+                className="page-link rounded-lg border border-[var(--line)] bg-[var(--card)] px-3.5 py-1.5 font-medium text-[var(--ink)] transition-colors hover:border-[var(--ink-soft)]"
+              >
+                Email
+              </a>
+              <ExternalLink
+                href={resumeUrl}
+                className="page-link text-[var(--ink-soft)] underline-offset-4 hover:underline"
+              >
+                Resume ↗
+              </ExternalLink>
+            </div>
+            <div className="mt-8 grid grid-cols-3 gap-x-4 gap-y-5 sm:mt-10 sm:gap-x-6">
               <a href="#speech-relay" className="page-link border-t border-[var(--line)] pt-3">
-                <strong className="block text-[15px] font-medium tracking-[-0.02em]">
-                  <CountUp to={speechRelayMetrics.vadComparison.reductionPercent} decimals={1} active={play} />% less latency
+                <strong className="block font-mono text-[1.35rem] leading-none font-medium tracking-[-0.04em] tabular-nums text-[var(--ink)] sm:text-[1.8rem]">
+                  <CountUp
+                    to={speechRelayMetrics.vadComparison.reductionPercent}
+                    decimals={1}
+                    active={play}
+                  />
+                  %
                 </strong>
-                <span className="mt-1 block text-[13px] leading-5 text-[var(--ink-faint)]">
+                <span className="mt-1.5 block text-[12px] leading-4 font-medium text-[var(--ink-soft)] sm:text-[13px]">
+                  less latency
+                </span>
+                <span className="mt-1 hidden text-[12px] leading-5 text-[var(--ink-faint)] sm:block">
                   Speech Relay · VAD vs fixed windows
                 </span>
               </a>
               <a href="#open-source" className="page-link border-t border-[var(--line)] pt-3">
-                <strong className="block text-[15px] font-medium tracking-[-0.02em]">
-                  <CountUp to={mergedContributionSummary.merged} active={play} /> merged upstream PRs
+                <strong className="block font-mono text-[1.35rem] leading-none font-medium tracking-[-0.04em] tabular-nums text-[var(--ink)] sm:text-[1.8rem]">
+                  <CountUp to={mergedContributionSummary.merged} active={play} />
                 </strong>
-                <span className="mt-1 block text-[13px] leading-5 text-[var(--ink-faint)]">
+                <span className="mt-1.5 block text-[12px] leading-4 font-medium text-[var(--ink-soft)] sm:text-[13px]">
+                  <span className="sm:hidden">merged PRs</span>
+                  <span className="hidden sm:inline">merged upstream PRs</span>
+                </span>
+                <span className="mt-1 hidden text-[12px] leading-5 text-[var(--ink-faint)] sm:block">
                   {mergedContributionSummary.repositories} repositories
                 </span>
               </a>
               <a href="#bytewise" className="page-link border-t border-[var(--line)] pt-3">
-                <strong className="block text-[15px] font-medium tracking-[-0.02em]">
-                  Shipped on Google Play
+                <strong className="block font-mono text-[1.35rem] leading-none font-medium tracking-[-0.04em] tabular-nums text-[var(--ink)] sm:text-[1.8rem]">
+                  <CountUp to={2} active={play} />
                 </strong>
-                <span className="mt-1 block text-[13px] leading-5 text-[var(--ink-faint)]">
+                <span className="mt-1.5 block text-[12px] leading-4 font-medium text-[var(--ink-soft)] sm:text-[13px]">
+                  Google Play apps
+                </span>
+                <span className="mt-1 hidden text-[12px] leading-5 text-[var(--ink-faint)] sm:block">
                   Bytewise and Nen
                 </span>
               </a>
-            </div>
-            <div className="mt-8 flex gap-6 text-[14px]">
-              <a href={`mailto:${config.email}`} className="page-link">
-                Email
-              </a>
-              <ExternalLink href={resumeUrl} className="page-link text-[var(--ink-faint)]">
-                Resume
-              </ExternalLink>
             </div>
           </motion.div>
         </section>
@@ -565,38 +651,7 @@ export function ClientApp() {
             {mergedContributionSummary.repositories} repositories. Upstream
             work only. The list is a local snapshot from 14 Oct 2026.
           </p>
-          <ul className="mt-6 flex flex-col gap-2">
-            {mergedContributionRepositories.map((item) => (
-              <li key={item.repository} className="font-mono text-[12px]">
-                <ExternalLink
-                  href={`https://github.com/${item.repository}`}
-                  className="page-link text-[var(--ink-soft)]"
-                >
-                  {item.repository}
-                  <span className="ml-2 text-[var(--ink)]">{item.merged}</span>
-                </ExternalLink>
-              </li>
-            ))}
-          </ul>
-          <ContributionList records={featuredContributions} />
-          {moreContributions.length > 0 ? (
-            <details id="more-contributions-details" className="group">
-              <summary className="flex cursor-pointer list-none items-baseline justify-between gap-4 border-t border-[var(--line)] py-3 text-[13px] text-[var(--ink-soft)] marker:content-none [&::-webkit-details-marker]:hidden">
-                <span className="group-open:hidden">
-                  Show all {mergedContributions.length}
-                </span>
-                <span className="hidden group-open:inline">Show less</span>
-                <span className="font-mono text-[11px] text-[var(--ink-faint)] group-open:hidden">
-                  {moreContributions.length} more
-                </span>
-              </summary>
-              <div className="show-all-panel">
-                <div>
-                  <ContributionList records={moreContributions} />
-                </div>
-              </div>
-            </details>
-          ) : null}
+          <ContributionExplorer />
           <p className="mt-6 text-[14px]">
             <ExternalLink
               href="https://github.com/csy20"
@@ -616,12 +671,15 @@ export function ClientApp() {
           <SectionLabel index="03" play={play}>
             <span id="contact-title">Contact</span>
           </SectionLabel>
-          <a
-            href={`mailto:${config.email}`}
-            className="page-link mt-6 block text-[1.7rem] tracking-[-0.03em] sm:text-[2rem]"
-          >
-            {config.email}
-          </a>
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <a
+              href={`mailto:${config.email}`}
+              className="page-link text-[1.55rem] tracking-[-0.03em] sm:text-[2rem]"
+            >
+              {config.email}
+            </a>
+            <CopyEmailButton email={config.email} />
+          </div>
           <p className="mt-3 text-[15px] text-[var(--ink-soft)]">{profile.availability}</p>
           <ul className="mt-8 flex flex-col">
             {contactLinks.map((link) => (
@@ -636,11 +694,6 @@ export function ClientApp() {
               </li>
             ))}
           </ul>
-          <p className="mt-6 text-[14px]">
-            <ExternalLink href={resumeUrl} className="page-link text-[var(--ink-soft)]">
-              Resume
-            </ExternalLink>
-          </p>
           <footer className="mt-16 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[var(--line)] pt-6 text-[13px] text-[var(--ink-faint)]">
             <a href="#hero" className="page-link text-[var(--ink)]">
               Chitresh Yadav <span className="text-[var(--ink-faint)]">/ csy20</span>
@@ -655,7 +708,11 @@ export function ClientApp() {
       </main>
       <Opening onLeave={onLeave} />
       <AfterMount>
-        <CaseStudyDialog noteId={activeNote} onClose={closeNote} />
+        <CaseStudyDialog
+          noteId={activeNote}
+          onClose={closeNote}
+          onNavigate={openNote}
+        />
         {play ? <SocialDock /> : null}
       </AfterMount>
     </>

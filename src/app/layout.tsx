@@ -47,6 +47,9 @@ export const viewport: Viewport = {
 const themeScript = `(() => {
   let theme = "dark";
   try {
+    if (window.matchMedia("(prefers-color-scheme: light)").matches) theme = "light";
+  } catch (e) {}
+  try {
     const stored = localStorage.getItem("csy20-theme");
     if (stored === "light" || stored === "dark") theme = stored;
   } catch (e) {}
@@ -54,7 +57,11 @@ const themeScript = `(() => {
   document.documentElement.style.colorScheme = theme;
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", theme === "light" ? "#f6f5f1" : "#0a0a0a");
-  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  let seen = false;
+  try {
+    seen = sessionStorage.getItem("csy20-opened") === "1";
+  } catch (e) {}
+  if (!seen && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     document.documentElement.classList.add("is-opening");
     window.setTimeout(() => {
       document.documentElement.classList.remove("is-opening");

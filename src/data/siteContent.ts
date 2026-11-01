@@ -94,7 +94,7 @@ export const profile = {
   strapline: "Python · Rust · TypeScript",
   heroDescription:
     "I build backend systems and turn machine learning into working products. From realtime speech to local agents, I care about what ships — and how well it runs.",
-  availability: "Seeking SDE-1 / Backend / Applied ML roles.",
+  availability: "Open to SDE-1 / Backend / Applied ML roles.",
 };
 
 export const portraits: Record<PortraitId, Portrait> = {

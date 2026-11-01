@@ -7,6 +7,8 @@ import { portraits, profile } from "@/data/siteContent";
 const ease = [0.22, 1, 0.36, 1] as const;
 const hops = ["mic", "vad", "asr", "out"];
 
+export const OPENING_SESSION_KEY = "csy20-opened";
+
 function subscribeToMotion(onChange: () => void) {
   const media = window.matchMedia("(prefers-reduced-motion: reduce)");
   media.addEventListener("change", onChange);
@@ -21,18 +23,47 @@ export function usePrefersReducedMotion() {
   return useSyncExternalStore(subscribeToMotion, motionSnapshot, () => false);
 }
 
+function subscribeToOpeningSession() {
+  return () => {};
+}
+
+function openingSeenSnapshot(): boolean {
+  try {
+    return window.sessionStorage.getItem(OPENING_SESSION_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function useHasSeenOpening() {
+  return useSyncExternalStore(
+    subscribeToOpeningSession,
+    openingSeenSnapshot,
+    () => false,
+  );
+}
+
+function markOpeningSeen() {
+  try {
+    window.sessionStorage.setItem(OPENING_SESSION_KEY, "1");
+  } catch {
+    // Ignore restricted sessionStorage environments.
+  }
+}
+
 function clearOpeningClass() {
   document.documentElement.classList.remove("is-opening");
 }
 
 export function Opening({ onLeave }: { onLeave: () => void }) {
   const reduced = usePrefersReducedMotion();
+  const seen = useHasSeenOpening();
   const [visible, setVisible] = useState(true);
   const [leaving, setLeaving] = useState(false);
   const skipRef = useRef<() => void>(() => {});
 
   useEffect(() => {
-    if (reduced) {
+    if (reduced || openingSeenSnapshot()) {
       clearOpeningClass();
       onLeave();
       return;
@@ -46,7 +77,10 @@ export function Opening({ onLeave }: { onLeave: () => void }) {
       window.clearTimeout(leaveTimer);
       window.clearTimeout(hideTimer);
       clearOpeningClass();
-      onLeave();
+      markOpeningSeen();
+      if (!settled) {
+        onLeave();
+      }
       settled = true;
       if (immediate) {
         setVisible(false);
@@ -73,7 +107,7 @@ export function Opening({ onLeave }: { onLeave: () => void }) {
     };
   }, [onLeave, reduced]);
 
-  if (reduced || !visible) return null;
+  if (reduced || (seen && !leaving) || !visible) return null;
 
   return (
     <motion.div

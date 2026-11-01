@@ -30,8 +30,12 @@ afterEach(() => {
 });
 
 describe("SectionNav", () => {
-  it("links to every section with nothing active at first", () => {
+  it("links to every section across viewports with nothing active at first", () => {
     render(<SectionNav />);
+
+    const nav = screen.getByRole("navigation", { name: "Sections" });
+    expect(nav).not.toHaveClass("hidden");
+    expect(screen.getByText("OSS")).toHaveAttribute("aria-hidden", "true");
 
     expect(screen.getByRole("link", { name: "Work" })).toHaveAttribute("href", "#projects");
     expect(screen.getByRole("link", { name: "Open source" })).toHaveAttribute("href", "#open-source");

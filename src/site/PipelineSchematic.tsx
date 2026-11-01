@@ -19,11 +19,27 @@ function Arrow({ active }: { active: boolean }) {
       width="22"
       height="10"
       viewBox="0 0 22 10"
-      className={`mx-1 shrink-0 transition-opacity duration-150 ${
+      className={`mx-1 hidden shrink-0 transition-opacity duration-150 sm:block ${
         active ? "text-[var(--accent)] opacity-100" : "text-[var(--ink-faint)] opacity-45"
       }`}
     >
       <path d="M0 5h19M15 1l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.2" />
+    </svg>
+  );
+}
+
+function MobileConnector({ active }: { active: boolean }) {
+  return (
+    <svg
+      aria-hidden="true"
+      width="10"
+      height="10"
+      viewBox="0 0 10 10"
+      className={`shrink-0 transition-opacity duration-150 sm:hidden ${
+        active ? "text-[var(--accent)] opacity-100" : "text-[var(--ink-faint)] opacity-45"
+      }`}
+    >
+      <path d="M1 5h7M5.5 2L8.5 5 5.5 8" fill="none" stroke="currentColor" strokeWidth="1.2" />
     </svg>
   );
 }
@@ -145,23 +161,24 @@ export function PipelineSchematic() {
   const vadWidthPct = (vadProgressMs / fixedWindowMs) * 100;
   const fixedWidthPct = (fixedProgressMs / fixedWindowMs) * 100;
   const vadFinished = (running && simMs >= vadMs) || (!running && (completed || simMs >= vadMs));
+  const runLabel = running ? "Running 2×…" : completed ? "Replay (2×)" : "Run (2×)";
 
   return (
     <figure
       className="mt-4 rounded-xl border border-[var(--line)] bg-[var(--logo-well)] p-3"
       aria-label={`Speech Relay pipeline: Mic, VAD, ASR, MT, TTS, WebRTC out. ${meanMs} ms mean end to end.`}
     >
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+      <div className="mb-3 flex flex-nowrap items-center justify-between gap-2">
         <div
           role="group"
           aria-label="Speech Relay telemetry mode"
-          className="inline-flex rounded-lg border border-[var(--line)] bg-[var(--card)] p-0.5 font-mono text-[11px]"
+          className="inline-flex min-w-0 rounded-lg border border-[var(--line)] bg-[var(--card)] p-0.5 font-mono text-[10.5px] sm:text-[11px]"
         >
           <button
             type="button"
             aria-pressed={mode === "trace"}
             onClick={() => selectMode("trace")}
-            className={`folio-btn cursor-pointer rounded-md px-2 py-1 transition-colors ${
+            className={`folio-btn cursor-pointer truncate rounded-md px-1.5 py-1 transition-colors sm:px-2 ${
               mode === "trace"
                 ? "bg-[var(--logo-well)] text-[var(--ink)]"
                 : "text-[var(--ink-faint)] hover:text-[var(--ink)]"
@@ -173,7 +190,7 @@ export function PipelineSchematic() {
             type="button"
             aria-pressed={mode === "vad-race"}
             onClick={() => selectMode("vad-race")}
-            className={`folio-btn cursor-pointer rounded-md px-2 py-1 transition-colors ${
+            className={`folio-btn cursor-pointer truncate rounded-md px-1.5 py-1 transition-colors sm:px-2 ${
               mode === "vad-race"
                 ? "bg-[var(--logo-well)] text-[var(--ink)]"
                 : "text-[var(--ink-faint)] hover:text-[var(--ink)]"
@@ -186,28 +203,39 @@ export function PipelineSchematic() {
         <button
           type="button"
           onClick={() => runSimulation(mode)}
-          className="folio-btn inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--line)] bg-[var(--card)] px-2.5 py-1 font-mono text-[11px] text-[var(--ink-soft)] transition-colors hover:border-[var(--accent)] hover:text-[var(--ink)]"
+          title={runLabel}
+          className="folio-btn inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[var(--line)] bg-[var(--card)] px-2 py-1.5 font-mono text-[11px] text-[var(--ink-soft)] transition-colors hover:border-[var(--accent)] hover:text-[var(--ink)] sm:px-2.5 sm:py-1"
         >
           <span
             aria-hidden="true"
-            className={`h-1.5 w-1.5 rounded-full bg-[var(--accent)] ${
+            className={`hidden h-1.5 w-1.5 rounded-full bg-[var(--accent)] sm:inline-block ${
               running ? "animate-ping" : ""
             }`}
           />
-          {running ? "Running 2×…" : completed ? "Replay (2×)" : "Run (2×)"}
+          <svg
+            aria-hidden="true"
+            width="11"
+            height="11"
+            viewBox="0 0 12 12"
+            className={`text-[var(--accent)] sm:hidden ${running ? "animate-pulse" : ""}`}
+          >
+            <path d="M2.5 1.8L10 6L2.5 10.2V1.8Z" fill="currentColor" />
+          </svg>
+          <span className="max-sm:sr-only">{runLabel}</span>
         </button>
       </div>
 
       {mode === "trace" ? (
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <ol className="flex flex-wrap items-center gap-y-2 font-mono text-[11px] text-[var(--ink-soft)]">
+        <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-4">
+          <ol className="grid w-full grid-cols-3 gap-1.5 font-mono text-[11px] text-[var(--ink-soft)] sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:gap-0 sm:gap-y-2">
             {hops.map((hop, index) => {
               const isReached = activeHop >= index;
               const isCurrent = running && activeHop === index;
+              const arrowActive = activeHop < 0 || activeHop > index;
               return (
-                <li key={hop} className="flex items-center">
+                <li key={hop} className="flex min-w-0 items-center gap-1 sm:gap-0">
                   <motion.span
-                    className={`rounded-md border px-2 py-1 transition-colors duration-150 ${
+                    className={`flex-1 truncate rounded-md border px-1.5 py-1 text-center transition-colors duration-150 sm:flex-none sm:px-2 ${
                       isCurrent
                         ? "border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_16%,var(--card))] text-[var(--ink)]"
                         : isReached
@@ -221,19 +249,20 @@ export function PipelineSchematic() {
                   >
                     {hop}
                   </motion.span>
-                  {index < hops.length - 1 ? (
-                    <Arrow active={activeHop < 0 || activeHop > index} />
+                  {index < hops.length - 1 ? <Arrow active={arrowActive} /> : null}
+                  {index < hops.length - 1 && index !== 2 ? (
+                    <MobileConnector active={arrowActive} />
                   ) : null}
                 </li>
               );
             })}
           </ol>
-          <div className="ml-auto text-right font-mono leading-none">
-            <span className="block text-[1.6rem] tracking-[-0.04em] text-[var(--accent)] tabular-nums">
+          <div className="flex w-full items-baseline justify-between border-t border-[var(--line)] pt-2 font-mono leading-none sm:ml-auto sm:w-auto sm:flex-col sm:items-end sm:border-0 sm:pt-0 sm:text-right">
+            <span className="order-2 text-[1.35rem] tracking-[-0.04em] text-[var(--accent)] tabular-nums sm:order-1 sm:block sm:text-[1.6rem]">
               {running ? simMs : meanMs}
               <span className="ml-1 text-[11px] text-[var(--ink-faint)]">ms</span>
             </span>
-            <span className="mt-1 block text-[10px] tracking-[0.12em] text-[var(--ink-faint)] uppercase">
+            <span className="order-1 text-[10px] tracking-[0.12em] text-[var(--ink-faint)] uppercase sm:order-2 sm:mt-1 sm:block">
               {running
                 ? `hop ${activeHop + 1}/${hops.length} · 2×`
                 : "mean end to end"}
