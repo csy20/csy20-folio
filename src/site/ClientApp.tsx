@@ -20,6 +20,7 @@ import {
   parseNoteHash,
   type EngineeringNoteId,
 } from "./CaseStudyDialog";
+import { ActivityCalendar } from "./ActivityCalendar";
 import { ContributionExplorer } from "./ContributionExplorer";
 import { ScrollProgress } from "./ScrollProgress";
 import { SectionNav } from "./SectionNav";
@@ -651,6 +652,7 @@ export function ClientApp() {
             {mergedContributionSummary.repositories} repositories. Upstream
             work only. The list is a local snapshot from 14 Oct 2026.
           </p>
+          <ActivityCalendar />
           <ContributionExplorer />
           <p className="mt-6 text-[14px]">
             <ExternalLink
