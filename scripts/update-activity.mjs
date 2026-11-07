@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -68,25 +68,51 @@ const counted = weeks.reduce(
   0,
 );
 
-if (counted !== calendar.totalContributions) {
+const gap = Math.abs(counted - calendar.totalContributions);
+// GitHub's headline sometimes disagrees with the sum of the day cells by
+// one. A wide gap means the payload was cut off, so keep that as a failure.
+if (gap > 3) {
   throw new Error(
     `Day counts add up to ${counted}, but GitHub reported ${calendar.totalContributions}.`,
   );
 }
-
-const snapshot = {
-  generatedAt: new Date().toISOString(),
-  author: login,
-  totalContributions: calendar.totalContributions,
-  weeks,
-};
+if (gap > 0) {
+  console.warn(
+    `GitHub total ${calendar.totalContributions} differs from the day sum ${counted} by ${gap}. Keeping GitHub's total.`,
+  );
+}
 
 const destination = join(
   dirname(fileURLToPath(import.meta.url)),
   "../src/data/activity.generated.json",
 );
 
-writeFileSync(destination, `${JSON.stringify(snapshot, null, 2)}\n`);
-console.log(
-  `${snapshot.totalContributions} contributions, ${weeks.length} weeks, written to ${destination}`,
-);
+let previous = null;
+try {
+  previous = JSON.parse(readFileSync(destination, "utf8"));
+} catch {
+  previous = null;
+}
+
+const unchanged =
+  previous?.author === login &&
+  previous?.totalContributions === calendar.totalContributions &&
+  JSON.stringify(previous?.weeks) === JSON.stringify(weeks);
+
+const snapshot = {
+  generatedAt: unchanged ? previous.generatedAt : new Date().toISOString(),
+  author: login,
+  totalContributions: calendar.totalContributions,
+  weeks,
+};
+
+if (unchanged) {
+  console.log(
+    `${snapshot.totalContributions} contributions, ${weeks.length} weeks, unchanged`,
+  );
+} else {
+  writeFileSync(destination, `${JSON.stringify(snapshot, null, 2)}\n`);
+  console.log(
+    `${snapshot.totalContributions} contributions, ${weeks.length} weeks, written to ${destination}`,
+  );
+}

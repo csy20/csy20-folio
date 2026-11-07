@@ -1,0 +1,39 @@
+name: Refresh activity
+
+on:
+  schedule:
+    # 18:30 UTC is 00:00 IST, after the India day has closed.
+    - cron: "30 18 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Update the activity snapshot
+        env:
+          GH_TOKEN: ${{ secrets.ACTIVITY_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "Add a classic PAT for csy20, with the repo scope, as the ACTIVITY_TOKEN Actions secret."
+            exit 1
+          fi
+          node scripts/update-activity.mjs
+      - name: Commit the snapshot when the calendar changes
+        run: |
+          if git diff --quiet -- src/data/activity.generated.json; then
+            echo "Activity calendar is unchanged."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/data/activity.generated.json
+          git commit -m "Refresh GitHub activity calendar."
+          git push
