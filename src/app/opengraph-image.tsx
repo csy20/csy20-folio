@@ -13,6 +13,12 @@ export default function OpenGraphImage() {
     path.join(process.cwd(), "public/portrait-twitter.jpg"),
   );
   const portraitSrc = `data:image/jpeg;base64,${portraitBytes.toString("base64")}`;
+  const geistFont = readFileSync(
+    path.join(
+      process.cwd(),
+      "node_modules/next/dist/compiled/@vercel/og/Geist-Regular.ttf",
+    ),
+  );
 
   const tiles = [
     {
@@ -47,7 +53,7 @@ export default function OpenGraphImage() {
           backgroundColor: "#0a0a0a",
           color: "#eceae4",
           padding: "56px 64px",
-          fontFamily: "sans-serif",
+          fontFamily: "Geist, sans-serif",
         }}
       >
         <div
@@ -193,6 +199,13 @@ export default function OpenGraphImage() {
         </div>
       </div>
     ),
-    size,
+    {
+      ...size,
+      fonts: [
+        { name: "Geist", data: geistFont, weight: 400, style: "normal" },
+        { name: "Geist", data: geistFont, weight: 500, style: "normal" },
+        { name: "Geist", data: geistFont, weight: 600, style: "normal" },
+      ],
+    },
   );
 }

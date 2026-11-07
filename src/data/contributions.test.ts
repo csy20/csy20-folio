@@ -5,6 +5,9 @@ import {
   mergedContributionSummary,
   mergedContributions,
   contributionRepositories,
+  contributionSnapshot,
+  contributionSnapshotDate,
+  contributionSnapshotYear,
   contributionSummary,
   contributions,
   curatedContributionExclusions,
@@ -13,6 +16,7 @@ import {
   getContributionDate,
   getContributionDomId,
   getContributionStatus,
+  isGerritContribution,
   summarizeContributions,
 } from "./contributions";
 
@@ -62,13 +66,19 @@ describe("local contribution evidence", () => {
     );
 
     for (const record of contributions) {
-      expect(record.url).toBe(
-        `https://github.com/${record.repository}/pull/${record.number}`,
-      );
+      const expectedUrl = isGerritContribution(record)
+        ? `https://dart-review.googlesource.com/c/sdk/+/${record.number}`
+        : `https://github.com/${record.repository}/pull/${record.number}`;
+      expect(record.url).toBe(expectedUrl);
       expect(record.repository.split("/")[0]).not.toBe("csy20");
       expect(record.status === "merged").toBe(Boolean(record.mergedAt));
       expect(Number.isNaN(Date.parse(getContributionDate(record)))).toBe(false);
     }
+
+    expect(contributionSnapshotDate).toBe(
+      formatContributionDate(contributionSnapshot.generatedAt),
+    );
+    expect(contributionSnapshotYear).toBe(2026);
   });
 
   it("retains unmerged evidence in the dataset while deriving a merged-only portfolio view", () => {

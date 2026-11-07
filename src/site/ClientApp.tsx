@@ -16,7 +16,6 @@ import { IndiaClock } from "@/site/IndiaClock";
 import { PipelineSchematic } from "@/site/PipelineSchematic";
 import {
   CaseStudyDialog,
-  getNoteIdForProjectTitle,
   parseNoteHash,
   type EngineeringNoteId,
 } from "./CaseStudyDialog";
@@ -24,82 +23,30 @@ import { ActivityCalendar } from "./ActivityCalendar";
 import { ContributionExplorer } from "./ContributionExplorer";
 import { ScrollProgress } from "./ScrollProgress";
 import { SectionNav } from "./SectionNav";
+import { Opening, useHasSeenOpening } from "@/site/Opening";
 import {
-  Opening,
-  useHasSeenOpening,
+  ease,
+  subscribeNoop,
+  useHydrated,
   usePrefersReducedMotion,
-} from "@/site/Opening";
+} from "@/site/motion";
 import { SocialDock } from "@/dock/SocialDock";
 import { SoundToggle } from "@/dock/SoundToggle";
-import { mergedContributionSummary } from "@/data/contributions";
 import {
+  contributionSnapshotDate,
+  contributionSnapshotYear,
+  mergedContributionSummary,
+} from "@/data/contributions";
+import {
+  alsoProjects,
+  featuredProjects,
   portraits,
   profile,
-  projects,
   resumeUrl,
   socialLinks,
   speechRelayMetrics,
   type Project,
 } from "@/data/siteContent";
-
-const featuredTitles = ["Speech Relay", "02_OS", "Bytewise", "Nen"] as const;
-const wideTitles = new Set<string>(["Speech Relay", "02_OS"]);
-
-const alsoTitles = [
-  "Speech Relay Rust",
-  "MediaPipe AI",
-  "Router Agent",
-  "Warrant",
-] as const;
-
-const alsoLines: Record<(typeof alsoTitles)[number], string> = {
-  "Speech Relay Rust": "Hindi–English Whisper, served from Rust.",
-  "MediaPipe AI": "Transcription and summaries across five containers.",
-  "Router Agent": "Picks a model before spending a token.",
-  Warrant: "Asks before a production change.",
-};
-
-const metrics: Record<string, string> = {
-  "02_OS": "Public alpha · v2026.10.01",
-  Bytewise: "Live on Google Play",
-  Nen: "Live on Google Play",
-  "Speech Relay": `${speechRelayMetrics.profile.meanMs} ms mean · ${speechRelayMetrics.profile.p50Ms} ms p50`,
-  "Speech Relay Rust": "LoRA · ONNX int8 · Rust",
-  "MediaPipe AI": "Five containers · 500 MB uploads",
-  "Router Agent": "AMD hackathon",
-  Warrant: "MCP agent",
-};
-
-const blurbs: Record<string, string> = {
-  "02_OS":
-    "GNOME desktop with the on-machine 02 agent runtime: tree-sitter symbols, git-aware staleness, and an MCP server. Local-first, with no required model API.",
-  Bytewise:
-    "Production Flutter app on Google Play: 788+ DSA and system-design lessons, offline-first.",
-  Nen: "Offline music player for the files already on your phone. No streaming, no ads, no account.",
-  "Speech Relay":
-    `Streaming ASR → MT → TTS over WebRTC, English to Hindi. Silero-VAD cut a separate comparison from ${speechRelayMetrics.vadComparison.fixedWindowMs} ms mean to ${speechRelayMetrics.vadComparison.vadMs} ms, ${speechRelayMetrics.vadComparison.reductionPercent}% lower.`,
-  "Speech Relay Rust":
-    "Whisper fine-tuned with LoRA for Hindi–English code-mix, merged, exported to ONNX, quantized to int8, and served from Rust.",
-  "MediaPipe AI":
-    "React client, Express gateway, Redis queue, Python workers, PostgreSQL, and MinIO. Workers take uploads up to 500 MB.",
-  "Router Agent":
-    "Classifies a task with zero-token heuristics, then escalates to a local 1.5B model or at most one paid call.",
-  Warrant:
-    "Change-control agent with real MCP tools, sandboxed analysis, and human approval before irreversible production changes.",
-};
-
-const anchors: Record<string, string> = {
-  "02_OS": "02-os",
-  Bytewise: "bytewise",
-  Nen: "nen",
-  "Speech Relay": "speech-relay",
-  "Speech Relay Rust": "speech-relay-rust",
-  "MediaPipe AI": "mediapipe-ai",
-  "Router Agent": "router-agent",
-  Warrant: "warrant",
-};
-
-const ease = [0.22, 1, 0.36, 1] as const;
 
 const reveal = {
   initial: { opacity: 0, y: 12 },
@@ -114,10 +61,6 @@ function enter(play: boolean, delay: number) {
     animate: play ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 },
     transition: { duration: 0.5, delay: play ? delay : 0, ease },
   };
-}
-
-function subscribeToClient() {
-  return () => {};
 }
 
 const noteHashEvent = "csy20-note-hash";
@@ -143,18 +86,14 @@ function canUseClipboard(): boolean {
 }
 
 function AfterMount({ children }: { children: ReactNode }) {
-  const mounted = useSyncExternalStore(
-    subscribeToClient,
-    () => true,
-    () => false,
-  );
+  const mounted = useHydrated();
   if (!mounted) return null;
   return children;
 }
 
 function CopyEmailButton({ email }: { email: string }) {
   const supported = useSyncExternalStore(
-    subscribeToClient,
+    subscribeNoop,
     canUseClipboard,
     () => false,
   );
@@ -192,12 +131,6 @@ function CopyEmailButton({ email }: { email: string }) {
       <span aria-live="polite">{copied ? "Copied ✓" : "Copy"}</span>
     </button>
   );
-}
-
-function findProject(title: string): Project {
-  const project = projects.find((item) => item.title === title);
-  if (!project) throw new Error(`Missing project: ${title}`);
-  return project;
 }
 
 function ExternalLink({
@@ -259,10 +192,9 @@ function SectionLabel({
   );
 }
 
-function AlsoRow({ title }: { title: (typeof alsoTitles)[number] }) {
-  const project = findProject(title);
+function AlsoRow({ project }: { project: Project }) {
   return (
-    <article id={anchors[title]} className="draw-row border-t border-[var(--line)] py-3.5">
+    <article id={project.slug} className="draw-row border-t border-[var(--line)] py-3.5">
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
           {project.logo ? (
@@ -308,31 +240,29 @@ function AlsoRow({ title }: { title: (typeof alsoTitles)[number] }) {
           project.logo ? "sm:pl-[2.125rem]" : ""
         }`}
       >
-        {alsoLines[title]}
+        {project.alsoLine}
       </p>
     </article>
   );
 }
 
 function ProjectRow({
-  title,
+  project,
   index,
   play,
   onOpenNote,
 }: {
-  title: string;
+  project: Project;
   index: number;
   play: boolean;
   onOpenNote: (id: EngineeringNoteId) => void;
 }) {
-  const project = findProject(title);
-  const noteId = getNoteIdForProjectTitle(title);
-  const isWide = wideTitles.has(title);
+  const isWide = project.placement === "featured-wide";
 
   return (
     <motion.article
-      id={anchors[title]}
-      key={play ? title : `${title}-wait`}
+      id={project.slug}
+      key={play ? project.slug : `${project.slug}-wait`}
       className={`work-card group flex flex-col rounded-2xl border border-[var(--line)] bg-[var(--card)] p-4 ${
         isWide ? "sm:col-span-2" : ""
       }`}
@@ -356,7 +286,7 @@ function ProjectRow({
                 width={64}
                 height={64}
                 className={`work-logo h-11 w-11 shrink-0 rounded-[0.85rem] object-contain ${
-                  title === "02_OS" ? "bg-white" : "bg-[var(--logo-well)]"
+                  project.slug === "02-os" ? "bg-white" : "bg-[var(--logo-well)]"
                 }`}
               />
             ) : null}
@@ -369,7 +299,7 @@ function ProjectRow({
               </p>
             </div>
           </div>
-          {title === "02_OS" ? (
+          {project.slug === "02-os" ? (
             <ul
               aria-label="02_OS technologies"
               className="hidden shrink-0 items-center gap-1.5 font-mono text-[11px] text-[var(--ink-soft)] sm:flex"
@@ -407,10 +337,10 @@ function ProjectRow({
           isWide ? "mt-3 max-w-[64ch]" : "mt-1.5 line-clamp-3"
         }`}
       >
-        {blurbs[title]}
+        {project.blurb}
       </p>
 
-      {title === "Speech Relay" ? <PipelineSchematic /> : null}
+      {project.slug === "speech-relay" ? <PipelineSchematic /> : null}
 
       <div
         className={`mt-auto pt-3 ${
@@ -424,17 +354,17 @@ function ProjectRow({
             isWide ? "sm:order-2" : ""
           }`}
         >
-          {metrics[title]}
+          {project.metric}
         </p>
         <div
           className={`flex flex-wrap items-center gap-x-3 gap-y-1 ${
             isWide ? "sm:order-1" : "mt-2.5"
           }`}
         >
-          {noteId ? (
+          {project.noteId ? (
             <button
               type="button"
-              onClick={() => onOpenNote(noteId)}
+              onClick={() => onOpenNote(project.noteId!)}
               className="folio-btn cursor-pointer text-[12px] font-medium text-[var(--accent)] underline-offset-4 hover:underline"
             >
               Engineering notes
@@ -616,10 +546,10 @@ export function ClientApp() {
             <span id="projects-title">Selected work</span>
           </SectionLabel>
           <div className="mt-6 grid items-stretch gap-3 sm:grid-cols-2">
-            {featuredTitles.map((title, index) => (
+            {featuredProjects.map((project, index) => (
               <ProjectRow
-                key={title}
-                title={title}
+                key={project.slug}
+                project={project}
                 index={index}
                 play={play}
                 onOpenNote={openNote}
@@ -631,8 +561,8 @@ export function ClientApp() {
               Also
             </h3>
             <div className="mt-4">
-              {alsoTitles.map((title) => (
-                <AlsoRow key={title} title={title} />
+              {alsoProjects.map((project) => (
+                <AlsoRow key={project.slug} project={project} />
               ))}
             </div>
           </div>
@@ -650,7 +580,8 @@ export function ClientApp() {
           <p className="mt-4 max-w-[52ch] text-[15px] leading-7 text-[var(--ink-soft)]">
             {mergedContributionSummary.merged} merged pull requests across{" "}
             {mergedContributionSummary.repositories} repositories. Upstream
-            work only. The list is a local snapshot from 14 Oct 2026.
+            work only. The list is a local snapshot from{" "}
+            {contributionSnapshotDate}.
           </p>
           <ActivityCalendar />
           <ContributionExplorer />
@@ -704,7 +635,7 @@ export function ClientApp() {
             <AfterMount>
               <SoundToggle />
             </AfterMount>
-            <span className="sm:ml-auto">© 2026</span>
+            <span className="sm:ml-auto">© {contributionSnapshotYear}</span>
           </footer>
         </motion.section>
       </main>

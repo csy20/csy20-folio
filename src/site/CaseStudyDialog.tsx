@@ -2,32 +2,20 @@
 
 import { useEffect, useRef, type MouseEvent } from "react";
 import {
+  ENGINEERING_NOTE_IDS,
   caseStudies,
   productSpotlights,
   projects,
   type CaseStudy,
+  type EngineeringNoteId,
   type ProductSpotlight,
   type Project,
 } from "@/data/siteContent";
 
-export const ENGINEERING_NOTE_IDS = [
-  "speech-relay",
-  "02-os",
-  "bytewise",
-  "nen",
-] as const;
-
-export type EngineeringNoteId = (typeof ENGINEERING_NOTE_IDS)[number];
-
-const titleToNoteId: Readonly<Record<string, EngineeringNoteId>> = {
-  "Speech Relay": "speech-relay",
-  "02_OS": "02-os",
-  Bytewise: "bytewise",
-  Nen: "nen",
-};
+export { ENGINEERING_NOTE_IDS, type EngineeringNoteId } from "@/data/siteContent";
 
 export function getNoteIdForProjectTitle(title: string): EngineeringNoteId | null {
-  return titleToNoteId[title] ?? null;
+  return projects.find((item) => item.title === title)?.noteId ?? null;
 }
 
 export function parseNoteHash(hash: string): EngineeringNoteId | null {

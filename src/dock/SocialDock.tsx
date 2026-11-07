@@ -1,5 +1,5 @@
 import { useEffect, useState, type PointerEvent, type ReactNode } from "react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { socialLinks } from "../data/siteContent";
 import { useTheme } from "./useTheme";
 import { Icon } from "./ui/Icon";

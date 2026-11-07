@@ -20,6 +20,24 @@ export function getContributionDomId(
   return `pr-${record.repository.replace(/[^a-zA-Z0-9_-]/g, "-")}-${record.number}`;
 }
 
+export function isGerritContribution(
+  record: Pick<Contribution, "url">,
+): boolean {
+  return record.url.startsWith("https://dart-review.googlesource.com/");
+}
+
+export function getRepositoryContributionsUrl(
+  repository: string,
+  githubUsername: string,
+): string {
+  if (repository === "dart-lang/sdk") {
+    return "https://dart-review.googlesource.com/q/project:sdk+owner:csy24022004%40gmail.com+status:merged";
+  }
+  return `https://github.com/${repository}/pulls?q=${encodeURIComponent(
+    `is:pr author:${githubUsername} is:merged`,
+  )}`;
+}
+
 export type ContributionSummary = {
   total: number;
   merged: number;
@@ -108,6 +126,14 @@ export function formatContributionDate(value: string): string {
     timeZone: "UTC",
   }).format(new Date(value));
 }
+
+export const contributionSnapshotDate = formatContributionDate(
+  contributionSnapshot.generatedAt,
+);
+
+export const contributionSnapshotYear = new Date(
+  contributionSnapshot.generatedAt,
+).getUTCFullYear();
 
 export function describeContributionTimeline(
   record: Pick<Contribution, "createdAt" | "mergedAt">,

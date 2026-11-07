@@ -12,6 +12,7 @@ import {
   type ThemeTransitionOrigin,
 } from "./useTheme";
 import { config } from "../config";
+import { prefersReducedMotion } from "../site/motion";
 
 const themeEvent = "csy20-theme-change";
 
@@ -82,9 +83,10 @@ function applyTheme(theme: Theme) {
   const root = document.documentElement;
   root.setAttribute("data-theme", theme);
   root.style.colorScheme = theme;
+  const content = theme === "light" ? "#f6f5f1" : "#0a0a0a";
   document
-    .querySelector('meta[name="theme-color"]')
-    ?.setAttribute("content", theme === "light" ? "#f6f5f1" : "#0a0a0a");
+    .querySelectorAll('meta[name="theme-color"]')
+    .forEach((meta) => meta.setAttribute("content", content));
 }
 
 function persistThemeChoice(next: Theme) {
@@ -100,14 +102,6 @@ function persistThemeChoice(next: Theme) {
   }
   applyTheme(next);
   window.dispatchEvent(new Event(themeEvent));
-}
-
-function prefersReducedMotion(): boolean {
-  try {
-    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  } catch {
-    return false;
-  }
 }
 
 function transitionTheme(next: Theme, origin?: ThemeTransitionOrigin) {

@@ -7,11 +7,14 @@ import {
   formatContributionDate,
   getContributionDate,
   getContributionDomId,
+  getRepositoryContributionsUrl,
+  isGerritContribution,
   mergedContributionRepositories,
   mergedContributions,
 } from "@/data/contributions";
 
 const featuredContributionUrls = [
+  "https://dart-review.googlesource.com/c/sdk/+/569580",
   "https://github.com/semantica-agi/semantica/pull/1922",
   "https://github.com/redhat-et/ripwire/pull/244",
   "https://github.com/internetarchive/openlibrary/pull/13611",
@@ -31,6 +34,7 @@ const moreContributions = mergedContributions.filter(
 
 const preferredRepoOrder = [
   "semantica-agi/semantica",
+  "dart-lang/sdk",
   "redhat-et/ripwire",
   "internetarchive/openlibrary",
   "topoteretes/cognee",
@@ -64,6 +68,7 @@ function ContributionList({
     <ol>
       {records.map((record) => {
         const timeline = describeContributionTimeline(record);
+        const isGerrit = isGerritContribution(record);
         return (
           <li key={record.url} className="draw-row border-t border-[var(--line)]">
             <details id={getContributionDomId(record)} className="group/pr">
@@ -112,7 +117,9 @@ function ContributionList({
                     rel="noopener noreferrer"
                     className="page-link mb-4 inline-block text-[13px] text-[var(--ink-soft)] underline-offset-4 hover:underline"
                   >
-                    View pull request on GitHub
+                    {isGerrit
+                      ? "View change on Gerrit"
+                      : "View pull request on GitHub"}
                   </a>
                 </div>
               </div>
@@ -132,9 +139,7 @@ export function ContributionExplorer() {
     : null;
 
   const repoMergedQueryUrl = selectedRepo
-    ? `https://github.com/${selectedRepo}/pulls?q=${encodeURIComponent(
-        `is:pr author:${config.githubUsername} is:merged`,
-      )}`
+    ? getRepositoryContributionsUrl(selectedRepo, config.githubUsername)
     : null;
 
   return (

@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CountUp } from "./CountUp";
 
@@ -27,6 +28,13 @@ afterEach(() => {
 });
 
 describe("CountUp", () => {
+  it("renders the final value in server-rendered HTML instead of zero", () => {
+    const html = renderToString(<CountUp to={23.6} decimals={1} />);
+
+    expect(html).toContain("23.6");
+    expect(html).not.toContain("0.0");
+  });
+
   it("sets the final value immediately under prefers-reduced-motion", async () => {
     vi.spyOn(window, "matchMedia").mockImplementation(
       (query) =>

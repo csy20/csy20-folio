@@ -1,23 +1,33 @@
 import { config } from "../config";
 
-export type ProjectLinkTone = "ink" | "clay" | "mint";
+export const ENGINEERING_NOTE_IDS = [
+  "speech-relay",
+  "02-os",
+  "bytewise",
+  "nen",
+] as const;
+
+export type EngineeringNoteId = (typeof ENGINEERING_NOTE_IDS)[number];
 
 export type ProjectLink = {
   label: string;
   href: string;
-  tone: ProjectLinkTone;
 };
 
-export type ProjectGroup = "product" | "selected" | "other";
+export type ProjectPlacement = "featured-wide" | "featured" | "also";
 
 export type Project = {
+  slug: string;
   title: string;
   eyebrow: string;
   description: string;
+  blurb: string;
+  metric: string;
+  alsoLine?: string;
+  placement: ProjectPlacement;
+  noteId?: EngineeringNoteId;
   tags: string[];
   links: ProjectLink[];
-  group: ProjectGroup;
-  wide?: boolean;
   logo?: string;
   spotlight?: string;
   releaseNote?: string;
@@ -30,33 +40,6 @@ export type Portrait = {
   src: string;
   label: string;
   alt: string;
-};
-
-export type StackItem = {
-  name: string;
-  icon:
-    | "html"
-    | "css"
-    | "javascript"
-    | "typescript"
-    | "jsx"
-    | "tsx"
-    | "nextjs"
-    | "react"
-    | "reactnative"
-    | "mongodb"
-    | "express"
-    | "ubuntu"
-    | "flutter"
-    | "go"
-    | "firebase"
-    | "supabase"
-    | "dart"
-    | "tailwindcss"
-    | "python"
-    | "docker"
-    | "rust";
-  category: "languages" | "backend" | "ml" | "platform";
 };
 
 export type SocialIcon =
@@ -89,7 +72,6 @@ export const speechRelayMetrics = {
 export const profile = {
   name: "Chitresh Yadav",
   handle: "csy20",
-  socialHandle: "the__csy20",
   role: "Backend · Applied ML",
   strapline: "Python · Rust · TypeScript",
   heroDescription:
@@ -106,58 +88,18 @@ export const portraits: Record<PortraitId, Portrait> = {
   },
 };
 
-export const techStack: StackItem[] = [
-  { name: "Python", icon: "python", category: "languages" },
-  { name: "Rust", icon: "rust", category: "languages" },
-  { name: "TypeScript", icon: "typescript", category: "languages" },
-  { name: "SQL", icon: "javascript", category: "languages" },
-  { name: "Dart", icon: "dart", category: "languages" },
-  { name: "FastAPI", icon: "python", category: "backend" },
-  { name: "Express.js", icon: "express", category: "backend" },
-  { name: "WebRTC", icon: "javascript", category: "backend" },
-  { name: "Redis", icon: "mongodb", category: "backend" },
-  { name: "PostgreSQL", icon: "mongodb", category: "backend" },
-  { name: "Whisper", icon: "python", category: "ml" },
-  { name: "LoRA / PEFT", icon: "python", category: "ml" },
-  { name: "ONNX Runtime", icon: "python", category: "ml" },
-  { name: "IndicTrans2", icon: "python", category: "ml" },
-  { name: "Docker", icon: "docker", category: "platform" },
-  { name: "GitHub Actions", icon: "docker", category: "platform" },
-  { name: "GCP", icon: "firebase", category: "platform" },
-  { name: "Linux", icon: "ubuntu", category: "platform" },
-];
-
 export const projects: Project[] = [
   {
-    title: "02_OS",
-    eyebrow: "Agent-native desktop",
-    description:
-      "GNOME desktop with the 02 agent runtime on the machine: tree-sitter symbols, git-aware staleness, and an MCP server for coding agents. Public alpha live image.",
-    tags: ["Rust", "GNOME", "MCP", "Linux"],
-    group: "product",
-    wide: true,
-    logo: "/02-logo.png",
-    spotlight: "Public alpha",
-    releaseNote:
-      "v2026.10.01 live image. Local-first — no account and no required model API.",
-    links: [
-      {
-        label: "GitHub",
-        href: "https://github.com/csy20/02_OS",
-        tone: "clay",
-      },
-      {
-        label: "Release",
-        href: "https://github.com/csy20/02_OS/releases/tag/v2026.10.01",
-        tone: "ink",
-      },
-    ],
-  },
-  {
+    slug: "speech-relay",
     title: "Speech Relay",
     eyebrow: "Realtime speech-to-speech",
     description:
       `Streaming ASR → MT → TTS over WebRTC (EN→HI). A CPU profile measured ${speechRelayMetrics.profile.meanMs} ms mean / ${speechRelayMetrics.profile.p50Ms} ms p50 across ${speechRelayMetrics.profile.utterances} utterances. In a separate VAD comparison, mean latency fell from ${speechRelayMetrics.vadComparison.fixedWindowMs} ms to ${speechRelayMetrics.vadComparison.vadMs} ms (${speechRelayMetrics.vadComparison.reductionPercent}%). One shared ASR stream fans out to multiple listeners; a WER/CER eval harness tracks recognition quality.`,
+    blurb:
+      `Streaming ASR → MT → TTS over WebRTC, English to Hindi. Silero-VAD cut a separate comparison from ${speechRelayMetrics.vadComparison.fixedWindowMs} ms mean to ${speechRelayMetrics.vadComparison.vadMs} ms, ${speechRelayMetrics.vadComparison.reductionPercent}% lower.`,
+    metric: `${speechRelayMetrics.profile.meanMs} ms mean · ${speechRelayMetrics.profile.p50Ms} ms p50`,
+    placement: "featured-wide",
+    noteId: "speech-relay",
     tags: [
       "Python",
       "faster-whisper",
@@ -166,7 +108,6 @@ export const projects: Project[] = [
       "ONNX",
       "asyncio",
     ],
-    group: "selected",
     logo: "/logos/speech-relay.svg",
     spotlight: `${speechRelayMetrics.profile.meanMs} ms mean E2E`,
     releaseNote:
@@ -175,17 +116,48 @@ export const projects: Project[] = [
       {
         label: "GitHub",
         href: "https://github.com/csy20/speech-relay",
-        tone: "clay",
       },
     ],
   },
   {
+    slug: "02-os",
+    title: "02_OS",
+    eyebrow: "Agent-native desktop",
+    description:
+      "GNOME desktop with the 02 agent runtime on the machine: tree-sitter symbols, git-aware staleness, and an MCP server for coding agents. Public alpha live image.",
+    blurb:
+      "GNOME desktop with the on-machine 02 agent runtime: tree-sitter symbols, git-aware staleness, and an MCP server. Local-first, with no required model API.",
+    metric: "Public alpha · v2026.10.01",
+    placement: "featured-wide",
+    noteId: "02-os",
+    tags: ["Rust", "GNOME", "MCP", "Linux"],
+    logo: "/02-logo.png",
+    spotlight: "Public alpha",
+    releaseNote:
+      "v2026.10.01 live image. Local-first — no account and no required model API.",
+    links: [
+      {
+        label: "GitHub",
+        href: "https://github.com/csy20/02_OS",
+      },
+      {
+        label: "Release",
+        href: "https://github.com/csy20/02_OS/releases/tag/v2026.10.01",
+      },
+    ],
+  },
+  {
+    slug: "bytewise",
     title: "Bytewise",
     eyebrow: "Learning app",
     description:
       "Production Flutter app on Google Play: 788+ DSA / system-design lessons with an offline-first in-memory + SQLite cache (Riverpod, Drift).",
+    blurb:
+      "Production Flutter app on Google Play: 788+ DSA and system-design lessons, offline-first.",
+    metric: "Live on Google Play",
+    placement: "featured",
+    noteId: "bytewise",
     tags: ["Flutter", "Dart", "Riverpod", "Drift / SQLite", "Play Store"],
-    group: "product",
     logo: "/bytewise-logo.png",
     spotlight: "Live on Google Play",
     releaseNote:
@@ -194,72 +166,21 @@ export const projects: Project[] = [
       {
         label: "Play Store",
         href: "https://play.google.com/store/apps/details?id=com.csy20.bytewise",
-        tone: "mint",
       },
     ],
   },
   {
-    title: "Speech Relay Rust",
-    eyebrow: "Code-mixed ASR + ONNX serving",
-    description:
-      "Data pipeline over MUCS Hindi–English speech (16 kHz, Devanagari + Latin filter, train/val/test). Fine-tuned Whisper with LoRA on decoder attention so it handles mid-utterance language switches. Serving path: merge LoRA, export encoder/decoder to ONNX, int8 quantize, infer from a Rust ort service outside Python.",
-    tags: ["Python", "Whisper", "LoRA / PEFT", "ONNX", "Rust"],
-    group: "selected",
-    logo: "/logos/speech-relay-rust.svg",
-    links: [
-      {
-        label: "GitHub",
-        href: "https://github.com/csy20/speech-relay-rust",
-        tone: "clay",
-      },
-    ],
-  },
-  {
-    title: "MediaPipe AI",
-    eyebrow: "Distributed media pipeline",
-    description:
-      "Five-container system: React client → Express REST gateway → Redis job queue → Python workers (Whisper transcription + BART summarization) → PostgreSQL metadata + MinIO. Async job polling and S3-compatible uploads up to 500 MB so workers scale independently of the API.",
-    tags: [
-      "Express",
-      "Python",
-      "Redis",
-      "PostgreSQL",
-      "MinIO",
-      "Docker Compose",
-    ],
-    group: "selected",
-    logo: "/logos/mediapipe-ai.svg",
-    links: [
-      {
-        label: "GitHub",
-        href: "https://github.com/csy20/mediapipe-ai",
-        tone: "clay",
-      },
-    ],
-  },
-  {
-    title: "Router Agent",
-    eyebrow: "Token-efficient LLM router",
-    description:
-      "AMD Developer Hackathon ACT II: classifies tasks (math, NER, summarization, code, QA) with zero-token heuristics, then escalates to a local 1.5B LLM or at most one paid API call. OpenTelemetry traces into SigNoz; shipped as a Docker service with schema validation.",
-    tags: ["Python", "Ollama", "OpenTelemetry", "Docker", "Hackathon"],
-    group: "other",
-    logo: "/logos/router-agent.svg",
-    links: [
-      {
-        label: "GitHub",
-        href: "https://github.com/csy20/router-agent",
-        tone: "clay",
-      },
-    ],
-  },
-  {
+    slug: "nen",
     title: "Nen",
     eyebrow: "Published on Play Store",
     description:
       "Offline music player for the files already on your phone. Local playback only — no streaming, no ads, no account. ExoPlayer decode, lock-screen controls, and a now-playing meter from the track envelope.",
+    blurb:
+      "Offline music player for the files already on your phone. No streaming, no ads, no account.",
+    metric: "Live on Google Play",
+    placement: "featured",
+    noteId: "nen",
     tags: ["Flutter", "Dart", "ExoPlayer", "Play Store"],
-    group: "product",
     logo: "/nen-logo.png",
     spotlight: "Live on Google Play",
     releaseNote:
@@ -268,32 +189,109 @@ export const projects: Project[] = [
       {
         label: "Play Store",
         href: "https://play.google.com/store/apps/details?id=dev.csy20.nen",
-        tone: "mint",
       },
       {
         label: "GitHub",
         href: "https://github.com/csy20/nen",
-        tone: "clay",
       },
     ],
   },
   {
+    slug: "speech-relay-rust",
+    title: "Speech Relay Rust",
+    eyebrow: "Code-mixed ASR + ONNX serving",
+    description:
+      "Data pipeline over MUCS Hindi–English speech (16 kHz, Devanagari + Latin filter, train/val/test). Fine-tuned Whisper with LoRA on decoder attention so it handles mid-utterance language switches. Serving path: merge LoRA, export encoder/decoder to ONNX, int8 quantize, infer from a Rust ort service outside Python.",
+    blurb:
+      "Whisper fine-tuned with LoRA for Hindi–English code-mix, merged, exported to ONNX, quantized to int8, and served from Rust.",
+    alsoLine: "Hindi–English Whisper, served from Rust.",
+    metric: "LoRA · ONNX int8 · Rust",
+    placement: "also",
+    tags: ["Python", "Whisper", "LoRA / PEFT", "ONNX", "Rust"],
+    logo: "/logos/speech-relay-rust.svg",
+    links: [
+      {
+        label: "GitHub",
+        href: "https://github.com/csy20/speech-relay-rust",
+      },
+    ],
+  },
+  {
+    slug: "mediapipe-ai",
+    title: "MediaPipe AI",
+    eyebrow: "Distributed media pipeline",
+    description:
+      "Five-container system: React client → Express REST gateway → Redis job queue → Python workers (Whisper transcription + BART summarization) → PostgreSQL metadata + MinIO. Async job polling and S3-compatible uploads up to 500 MB so workers scale independently of the API.",
+    blurb:
+      "React client, Express gateway, Redis queue, Python workers, PostgreSQL, and MinIO. Workers take uploads up to 500 MB.",
+    alsoLine: "Transcription and summaries across five containers.",
+    metric: "Five containers · 500 MB uploads",
+    placement: "also",
+    tags: [
+      "Express",
+      "Python",
+      "Redis",
+      "PostgreSQL",
+      "MinIO",
+      "Docker Compose",
+    ],
+    logo: "/logos/mediapipe-ai.svg",
+    links: [
+      {
+        label: "GitHub",
+        href: "https://github.com/csy20/mediapipe-ai",
+      },
+    ],
+  },
+  {
+    slug: "router-agent",
+    title: "Router Agent",
+    eyebrow: "Token-efficient LLM router",
+    description:
+      "AMD Developer Hackathon ACT II: classifies tasks (math, NER, summarization, code, QA) with zero-token heuristics, then escalates to a local 1.5B LLM or at most one paid API call. OpenTelemetry traces into SigNoz; shipped as a Docker service with schema validation.",
+    blurb:
+      "Classifies a task with zero-token heuristics, then escalates to a local 1.5B model or at most one paid call.",
+    alsoLine: "Picks a model before spending a token.",
+    metric: "AMD hackathon",
+    placement: "also",
+    tags: ["Python", "Ollama", "OpenTelemetry", "Docker", "Hackathon"],
+    logo: "/logos/router-agent.svg",
+    links: [
+      {
+        label: "GitHub",
+        href: "https://github.com/csy20/router-agent",
+      },
+    ],
+  },
+  {
+    slug: "warrant",
     title: "Warrant",
     eyebrow: "MCP agent",
     description:
       "TrueForge change-control agent: real MCP tools, sandboxed analysis, and human approval before irreversible production changes.",
+    blurb:
+      "Change-control agent with real MCP tools, sandboxed analysis, and human approval before irreversible production changes.",
+    alsoLine: "Asks before a production change.",
+    metric: "MCP agent",
+    placement: "also",
     tags: ["MCP", "Hackathon", "Agents"],
-    group: "other",
     logo: "/logos/warrant.svg",
     links: [
       {
         label: "GitHub",
         href: "https://github.com/csy20/warrant",
-        tone: "clay",
       },
     ],
   },
 ];
+
+export const featuredProjects: readonly Project[] = projects.filter(
+  (project) => project.placement !== "also",
+);
+
+export const alsoProjects: readonly Project[] = projects.filter(
+  (project) => project.placement === "also",
+);
 
 export const socialLinks: SocialLink[] = [
   {
@@ -342,11 +340,9 @@ export const socialLinks: SocialLink[] = [
 
 export const resumeUrl = config.resumeUrl;
 
-export const colophon = "Instrument Serif · Space Grotesk · 2026";
-
 export type CaseStudy = {
   title: string;
-  id: string;
+  id: EngineeringNoteId;
   category: string;
   overview: string;
   decision: string;
@@ -397,7 +393,7 @@ export const caseStudies: CaseStudy[] = [
 
 export type ProductSpotlight = {
   title: string;
-  id: string;
+  id: EngineeringNoteId;
   coverLine: string;
   overview: string;
   features: string[];
@@ -417,10 +413,3 @@ export const productSpotlights: ProductSpotlight[] = [
     ],
   },
 ];
-
-export const about = {
-  introduction:
-    "I'm Chitresh, an engineer focused on backend systems and applied machine learning. I like the whole path: understanding a problem, building the system, measuring it, and getting it into someone's hands.",
-  approach:
-    "My work moves between Python, Rust, and TypeScript — speech pipelines, local agent tooling, and queue-based services. I also ship Flutter products and contribute fixes upstream when the work takes me there.",
-};

@@ -7,19 +7,8 @@ import {
   useMotionValue,
   useTransform,
 } from "motion/react";
-import { useEffect, useRef, useSyncExternalStore } from "react";
-
-const ease = [0.22, 1, 0.36, 1] as const;
-
-function subscribeReduced(onChange: () => void) {
-  const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-  media.addEventListener("change", onChange);
-  return () => media.removeEventListener("change", onChange);
-}
-
-function reducedSnapshot() {
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
+import { useEffect, useRef } from "react";
+import { ease, useHydrated, usePrefersReducedMotion } from "./motion";
 
 function formatCount(value: number, decimals: number) {
   return decimals > 0 ? value.toFixed(decimals) : String(Math.round(value));
@@ -36,11 +25,8 @@ export function CountUp({
 }) {
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true, margin: "0px 0px -40px 0px" });
-  const reduced = useSyncExternalStore(
-    subscribeReduced,
-    reducedSnapshot,
-    () => false,
-  );
+  const hydrated = useHydrated();
+  const reduced = usePrefersReducedMotion();
   const value = useMotionValue(0);
   const text = useTransform(value, (latest) => formatCount(latest, decimals));
   const finalText = formatCount(to, decimals);
@@ -67,7 +53,7 @@ export function CountUp({
         ref={ref}
         className="col-start-1 row-start-1 text-left"
       >
-        {text}
+        {hydrated ? text : finalText}
       </motion.span>
     </span>
   );

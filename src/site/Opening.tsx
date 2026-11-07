@@ -3,29 +3,13 @@
 import { motion } from "motion/react";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { portraits, profile } from "@/data/siteContent";
+import { ease, subscribeNoop, usePrefersReducedMotion } from "./motion";
 
-const ease = [0.22, 1, 0.36, 1] as const;
+export { usePrefersReducedMotion } from "./motion";
+
 const hops = ["mic", "vad", "asr", "out"];
 
 export const OPENING_SESSION_KEY = "csy20-opened";
-
-function subscribeToMotion(onChange: () => void) {
-  const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-  media.addEventListener("change", onChange);
-  return () => media.removeEventListener("change", onChange);
-}
-
-function motionSnapshot() {
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
-export function usePrefersReducedMotion() {
-  return useSyncExternalStore(subscribeToMotion, motionSnapshot, () => false);
-}
-
-function subscribeToOpeningSession() {
-  return () => {};
-}
 
 function openingSeenSnapshot(): boolean {
   try {
@@ -37,7 +21,7 @@ function openingSeenSnapshot(): boolean {
 
 export function useHasSeenOpening() {
   return useSyncExternalStore(
-    subscribeToOpeningSession,
+    subscribeNoop,
     openingSeenSnapshot,
     () => false,
   );

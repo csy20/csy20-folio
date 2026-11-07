@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useScroll, useSpring } from "motion/react";
-import { usePrefersReducedMotion } from "./Opening";
+import { usePrefersReducedMotion } from "./motion";
 
 export function ScrollProgress() {
   const reduced = usePrefersReducedMotion();

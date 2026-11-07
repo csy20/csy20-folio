@@ -11,18 +11,19 @@ describe("ContributionExplorer", () => {
     });
     const buttons = within(group).getAllByRole("button");
 
-    expect(buttons).toHaveLength(7);
-    expect(buttons[0]).toHaveTextContent("All11");
+    expect(buttons).toHaveLength(8);
+    expect(buttons[0]).toHaveTextContent("All14");
     expect(buttons[0]).toHaveAttribute("aria-pressed", "true");
-    expect(buttons[1]).toHaveTextContent("semantica-agi/semantica6");
-    expect(buttons[2]).toHaveTextContent("redhat-et/ripwire1");
-    expect(buttons[3]).toHaveTextContent("internetarchive/openlibrary1");
+    expect(buttons[1]).toHaveTextContent("semantica-agi/semantica7");
+    expect(buttons[2]).toHaveTextContent("dart-lang/sdk2");
+    expect(buttons[3]).toHaveTextContent("redhat-et/ripwire1");
+    expect(buttons[4]).toHaveTextContent("internetarchive/openlibrary1");
   });
 
   it("filters merged pull requests by repository and resets cleanly", () => {
     render(<ContributionExplorer />);
 
-    expect(screen.getByText("Show all 11")).toBeInTheDocument();
+    expect(screen.getByText("Show all 14")).toBeInTheDocument();
 
     const cogneePill = screen.getByRole("button", {
       name: /topoteretes\/cognee/i,
@@ -30,7 +31,7 @@ describe("ContributionExplorer", () => {
     fireEvent.click(cogneePill);
 
     expect(cogneePill).toHaveAttribute("aria-pressed", "true");
-    expect(screen.queryByText("Show all 11")).not.toBeInTheDocument();
+    expect(screen.queryByText("Show all 14")).not.toBeInTheDocument();
     expect(
       screen.getByText(
         "fix(ingestion): keep WHERE clause for schema-qualified SQL tables",
@@ -48,6 +49,32 @@ describe("ContributionExplorer", () => {
     // Clicking the active pill toggles back to All
     fireEvent.click(cogneePill);
     expect(cogneePill).toHaveAttribute("aria-pressed", "false");
-    expect(screen.getByText("Show all 11")).toBeInTheDocument();
+    expect(screen.getByText("Show all 14")).toBeInTheDocument();
+  });
+
+  it("links Dart SDK contributions to Gerrit review", () => {
+    render(<ContributionExplorer />);
+
+    const dartPill = screen.getByRole("button", {
+      name: /dart-lang\/sdk/i,
+    });
+    fireEvent.click(dartPill);
+
+    expect(
+      screen.getByText(
+        "[analysis_server] Add a fix for use_is_even_rather_than_modulo",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "[analysis_server] Test highlighting of directives in part files",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /dart-lang\/sdk ↗/i }),
+    ).toHaveAttribute(
+      "href",
+      expect.stringContaining("https://dart-review.googlesource.com/"),
+    );
   });
 });

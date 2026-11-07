@@ -66,5 +66,8 @@ describe("ActivityCalendar", () => {
 
     fireEvent.mouseLeave(screen.getByRole("img"));
     expect(screen.getByText("Each square is a day.")).toBeInTheDocument();
+
+    fireEvent.pointerDown(cell);
+    expect(screen.getByText(formatActivityCaption(day))).toBeInTheDocument();
   });
 });

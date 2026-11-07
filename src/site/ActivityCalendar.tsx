@@ -120,6 +120,8 @@ export function ActivityCalendar() {
                         data-date={day.date}
                         className={`rounded-[2px] ${levelClass[day.level]}`}
                         onMouseEnter={() => setActive(day)}
+                        onPointerEnter={() => setActive(day)}
+                        onPointerDown={() => setActive(day)}
                       />
                     ) : (
                       <span key={`empty-${column}-${row}`} />
