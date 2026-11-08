@@ -14,6 +14,7 @@ import {
 } from "@/data/contributions";
 
 const featuredContributionUrls = [
+  "https://dart-review.googlesource.com/c/sdk/+/558101",
   "https://dart-review.googlesource.com/c/sdk/+/569580",
   "https://github.com/semantica-agi/semantica/pull/1922",
   "https://github.com/redhat-et/ripwire/pull/244",
