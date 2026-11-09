@@ -1,10 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from "react";
 import { config } from "@/config";
 import {
   activityAriaLabel,
+  activityDays,
   activityRange,
+  activityStats,
   activityTotal,
   activityWeeks,
   formatActivityCaption,
@@ -33,9 +41,14 @@ const summary = activityAriaLabel(
   activityRange.start,
   activityRange.end,
 );
+const dayIndexByDate = new Map(
+  activityDays.map((day, index) => [day.date, index]),
+);
+const defaultFocusDate = activityDays.at(-1)?.date ?? "";
 
 export function ActivityCalendar() {
   const scroller = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState<ActivityDay | null>(null);
   const [fade, setFade] = useState({ left: false, right: false });
 
@@ -54,6 +67,40 @@ export function ActivityCalendar() {
     element.scrollLeft = element.scrollWidth;
     syncFade();
   }, [syncFade]);
+
+  const focusedDate = active?.date ?? defaultFocusDate;
+
+  const handleGridKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    let delta = 0;
+    if (event.key === "ArrowLeft") delta = -7;
+    else if (event.key === "ArrowRight") delta = 7;
+    else if (event.key === "ArrowUp") delta = -1;
+    else if (event.key === "ArrowDown") delta = 1;
+    else if (event.key === "Home") delta = -activityDays.length;
+    else if (event.key === "End") delta = activityDays.length;
+    else if (event.key === "Escape") {
+      setActive(null);
+      return;
+    } else {
+      return;
+    }
+
+    event.preventDefault();
+    const currentIndex =
+      dayIndexByDate.get(focusedDate) ?? activityDays.length - 1;
+    const nextIndex = Math.max(
+      0,
+      Math.min(activityDays.length - 1, currentIndex + delta),
+    );
+    const nextDay = activityDays[nextIndex];
+    if (!nextDay) return;
+
+    setActive(nextDay);
+    const target = gridRef.current?.querySelector<HTMLElement>(
+      `[data-date="${nextDay.date}"]`,
+    );
+    target?.focus();
+  };
 
   return (
     <figure className="mt-8">
@@ -102,6 +149,7 @@ export function ActivityCalendar() {
                 ))}
               </div>
               <div
+                ref={gridRef}
                 role="img"
                 aria-label={summary}
                 className="grid gap-[2px]"
@@ -111,6 +159,7 @@ export function ActivityCalendar() {
                   gridAutoFlow: "column",
                 }}
                 onMouseLeave={() => setActive(null)}
+                onKeyDown={handleGridKeyDown}
               >
                 {columns.flatMap((slots, column) =>
                   slots.map((day, row) =>
@@ -118,10 +167,13 @@ export function ActivityCalendar() {
                       <span
                         key={day.date}
                         data-date={day.date}
-                        className={`rounded-[2px] ${levelClass[day.level]}`}
+                        tabIndex={day.date === focusedDate ? 0 : -1}
+                        aria-label={formatActivityCaption(day)}
+                        className={`rounded-[2px] outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--accent)] ${levelClass[day.level]}`}
                         onMouseEnter={() => setActive(day)}
                         onPointerEnter={() => setActive(day)}
                         onPointerDown={() => setActive(day)}
+                        onFocus={() => setActive(day)}
                       />
                     ) : (
                       <span key={`empty-${column}-${row}`} />
@@ -142,7 +194,17 @@ export function ActivityCalendar() {
 
       <div className="mt-3 flex items-start justify-between gap-4 text-[12px]">
         <p className="min-h-5 text-[13px] leading-5 text-[var(--ink-soft)]">
-          {active ? formatActivityCaption(active) : "Each square is a day."}
+          {active ? (
+            formatActivityCaption(active)
+          ) : (
+            <>
+              <span>Each square is a day.</span>{" "}
+              <span className="font-mono text-[11.5px] text-[var(--ink-faint)]">
+                · {activityStats.activeDays} active days · peak{" "}
+                {activityStats.maxDay.count}
+              </span>
+            </>
+          )}
         </p>
         <div
           className="flex shrink-0 items-center gap-1 text-[var(--ink-faint)]"

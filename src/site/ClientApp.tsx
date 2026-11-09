@@ -1,37 +1,6 @@
-"use client";
-
 import Image from "next/image";
-import { motion } from "motion/react";
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-  type ReactNode,
-} from "react";
+import type { ReactNode } from "react";
 import { config } from "@/config";
-import { CountUp } from "@/site/CountUp";
-import { IndiaClock } from "@/site/IndiaClock";
-import { PipelineSchematic } from "@/site/PipelineSchematic";
-import {
-  CaseStudyDialog,
-  parseNoteHash,
-  type EngineeringNoteId,
-} from "./CaseStudyDialog";
-import { ActivityCalendar } from "./ActivityCalendar";
-import { ContributionExplorer } from "./ContributionExplorer";
-import { ScrollProgress } from "./ScrollProgress";
-import { SectionNav } from "./SectionNav";
-import { Opening, useHasSeenOpening } from "@/site/Opening";
-import {
-  ease,
-  subscribeNoop,
-  useHydrated,
-  usePrefersReducedMotion,
-} from "@/site/motion";
-import { SocialDock } from "@/dock/SocialDock";
-import { SoundToggle } from "@/dock/SoundToggle";
 import {
   contributionSnapshotDate,
   contributionSnapshotYear,
@@ -47,91 +16,20 @@ import {
   speechRelayMetrics,
   type Project,
 } from "@/data/siteContent";
-
-const reveal = {
-  initial: { opacity: 0, y: 12 },
-  whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, margin: "0px 0px -40px 0px" },
-  transition: { duration: 0.45, ease },
-};
-
-function enter(play: boolean, delay: number) {
-  return {
-    initial: { opacity: 0, y: 12 },
-    animate: play ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 },
-    transition: { duration: 0.5, delay: play ? delay : 0, ease },
-  };
-}
-
-const noteHashEvent = "csy20-note-hash";
-
-function subscribeToNoteHash(onChange: () => void) {
-  window.addEventListener("hashchange", onChange);
-  window.addEventListener(noteHashEvent, onChange);
-  return () => {
-    window.removeEventListener("hashchange", onChange);
-    window.removeEventListener(noteHashEvent, onChange);
-  };
-}
-
-function readNoteHash(): EngineeringNoteId | null {
-  return parseNoteHash(window.location.hash);
-}
-
-function canUseClipboard(): boolean {
-  return (
-    typeof navigator !== "undefined" &&
-    typeof navigator.clipboard?.writeText === "function"
-  );
-}
-
-function AfterMount({ children }: { children: ReactNode }) {
-  const mounted = useHydrated();
-  if (!mounted) return null;
-  return children;
-}
-
-function CopyEmailButton({ email }: { email: string }) {
-  const supported = useSyncExternalStore(
-    subscribeNoop,
-    canUseClipboard,
-    () => false,
-  );
-  const [copied, setCopied] = useState(false);
-  const timerRef = useRef<number>(0);
-
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) window.clearTimeout(timerRef.current);
-    };
-  }, []);
-
-  if (!supported) return null;
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(email);
-      setCopied(true);
-      if (timerRef.current) window.clearTimeout(timerRef.current);
-      timerRef.current = window.setTimeout(() => {
-        setCopied(false);
-      }, 1500);
-    } catch {
-      // Clipboard write may fail if permission is denied.
-    }
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={handleCopy}
-      aria-label={copied ? "Email address copied" : "Copy email address"}
-      className="folio-btn inline-flex cursor-pointer items-center rounded-lg border border-[var(--line)] bg-[var(--card)] px-2.5 py-1 font-mono text-[11px] text-[var(--ink-soft)] transition-colors hover:border-[var(--accent)] hover:text-[var(--ink)]"
-    >
-      <span aria-live="polite">{copied ? "Copied ✓" : "Copy"}</span>
-    </button>
-  );
-}
+import { ActivityCalendar } from "./ActivityCalendar";
+import { ContributionExplorer } from "./ContributionExplorer";
+import { CountUp } from "./CountUp";
+import { IndiaClock } from "./IndiaClock";
+import {
+  CopyEmailButton,
+  FooterClientControls,
+  InteractiveOverlays,
+  OpenNoteButton,
+  ProjectCardShell,
+} from "./InteractiveShell";
+import { PipelineSchematic } from "./PipelineSchematic";
+import { ScrollProgress } from "./ScrollProgress";
+import { SectionNav } from "./SectionNav";
 
 function ExternalLink({
   href,
@@ -159,42 +57,31 @@ function ExternalLink({
 function SectionLabel({
   index,
   children,
-  play,
 }: {
   index: string;
   children: ReactNode;
-  play: boolean;
 }) {
   return (
     <div>
       <div className="mb-3 flex items-baseline justify-between gap-4">
-        <h2 className="text-[1.35rem] font-medium tracking-[-0.03em]">{children}</h2>
-        <motion.span
-          key={play ? "index" : "index-wait"}
-          className="section-index font-mono text-[12px] text-[var(--ink-faint)]"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true, margin: "0px 0px -40px 0px" }}
-          transition={{ duration: 0.4, delay: 0.15, ease }}
-        >
+        <h2 className="text-[1.35rem] font-medium tracking-[-0.03em]">
+          {children}
+        </h2>
+        <span className="section-index font-mono text-[12px] text-[var(--ink-faint)]">
           {index}
-        </motion.span>
+        </span>
       </div>
-      <motion.div
-        key={play ? "rule" : "rule-wait"}
-        className="section-rule"
-        initial={{ scaleX: 0 }}
-        whileInView={{ scaleX: 1 }}
-        viewport={{ once: true, margin: "0px 0px -40px 0px" }}
-        transition={{ duration: 0.6, ease }}
-      />
+      <div className="section-rule" />
     </div>
   );
 }
 
 function AlsoRow({ project }: { project: Project }) {
   return (
-    <article id={project.slug} className="draw-row border-t border-[var(--line)] py-3.5">
+    <article
+      id={project.slug}
+      className="draw-row border-t border-[var(--line)] py-3.5"
+    >
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
           {project.logo ? (
@@ -246,35 +133,15 @@ function AlsoRow({ project }: { project: Project }) {
   );
 }
 
-function ProjectRow({
-  project,
-  index,
-  play,
-  onOpenNote,
-}: {
-  project: Project;
-  index: number;
-  play: boolean;
-  onOpenNote: (id: EngineeringNoteId) => void;
-}) {
+function ProjectRow({ project }: { project: Project }) {
   const isWide = project.placement === "featured-wide";
 
   return (
-    <motion.article
+    <ProjectCardShell
       id={project.slug}
-      key={play ? project.slug : `${project.slug}-wait`}
-      className={`work-card group flex flex-col rounded-2xl border border-[var(--line)] bg-[var(--card)] p-4 ${
+      className={`work-card reveal-on-scroll group flex flex-col rounded-2xl border border-[var(--line)] bg-[var(--card)] p-4 ${
         isWide ? "sm:col-span-2" : ""
       }`}
-      initial={{ opacity: 0, y: 10 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "0px 0px -40px 0px" }}
-      transition={{ duration: 0.45, delay: index * 0.06, ease }}
-      onPointerMove={(event) => {
-        const rect = event.currentTarget.getBoundingClientRect();
-        event.currentTarget.style.setProperty("--mx", `${event.clientX - rect.left}px`);
-        event.currentTarget.style.setProperty("--my", `${event.clientY - rect.top}px`);
-      }}
     >
       {isWide ? (
         <div className="flex items-center justify-between gap-3">
@@ -361,15 +228,7 @@ function ProjectRow({
             isWide ? "sm:order-1" : "mt-2.5"
           }`}
         >
-          {project.noteId ? (
-            <button
-              type="button"
-              onClick={() => onOpenNote(project.noteId!)}
-              className="folio-btn cursor-pointer text-[12px] font-medium text-[var(--accent)] underline-offset-4 hover:underline"
-            >
-              Engineering notes
-            </button>
-          ) : null}
+          {project.noteId ? <OpenNoteButton noteId={project.noteId} /> : null}
           {project.links.map((link) => (
             <ExternalLink
               key={link.href}
@@ -381,39 +240,12 @@ function ProjectRow({
           ))}
         </div>
       </div>
-    </motion.article>
+    </ProjectCardShell>
   );
 }
 
 export function ClientApp() {
   const contactLinks = socialLinks.filter((link) => link.icon !== "email");
-  const reducedMotion = usePrefersReducedMotion();
-  const seenOpening = useHasSeenOpening();
-  const [opened, setOpened] = useState(false);
-  const activeNote = useSyncExternalStore(
-    subscribeToNoteHash,
-    readNoteHash,
-    () => null,
-  );
-  const play = reducedMotion || seenOpening || opened;
-  const onLeave = useCallback(() => {
-    document.documentElement.classList.remove("is-opening");
-    setOpened(true);
-  }, []);
-  const openNote = useCallback((id: EngineeringNoteId) => {
-    window.history.replaceState(null, "", `#notes-${id}`);
-    window.dispatchEvent(new Event(noteHashEvent));
-  }, []);
-  const closeNote = useCallback(() => {
-    if (parseNoteHash(window.location.hash)) {
-      window.history.replaceState(
-        null,
-        "",
-        window.location.pathname + window.location.search,
-      );
-      window.dispatchEvent(new Event(noteHashEvent));
-    }
-  }, []);
 
   return (
     <>
@@ -429,14 +261,11 @@ export function ClientApp() {
         tabIndex={-1}
         className="mx-auto w-full max-w-[48rem] px-6 pt-14 pb-36 outline-none sm:pt-20"
       >
-        <motion.header
-          className="site-header reveal sticky top-0 z-40 flex items-center justify-between gap-3 bg-[var(--page-bg)] py-3 text-[14px] [box-shadow:0_0_0_100vmax_var(--page-bg)] [clip-path:inset(0_-100vmax)]"
-          {...enter(play, 0)}
-        >
+        <header className="site-header sticky top-0 z-40 flex items-center justify-between gap-2 bg-[var(--page-bg)] py-3 text-[14px] [box-shadow:0_0_0_100vmax_var(--page-bg)] [clip-path:inset(0_-100vmax)] sm:gap-3">
           <a href="#hero" className="page-link shrink-0 tracking-[-0.02em]">
             csy20
           </a>
-          <div className="flex items-center gap-2.5 sm:gap-5">
+          <div className="flex items-center gap-2 sm:gap-5">
             <SectionNav />
             <ExternalLink
               href={resumeUrl}
@@ -446,10 +275,10 @@ export function ClientApp() {
             </ExternalLink>
             <IndiaClock />
           </div>
-        </motion.header>
+        </header>
 
         <section id="hero" aria-labelledby="intro-heading" className="pt-10 sm:pt-24">
-          <motion.div className="reveal" {...enter(play, 0.08)}>
+          <div>
             <div className="flex items-center justify-between gap-5">
               <div className="min-w-0">
                 <h1
@@ -458,31 +287,36 @@ export function ClientApp() {
                 >
                   {profile.name}
                 </h1>
-                <p className="mt-3 text-[17px] text-[var(--ink-soft)]">{profile.role}</p>
+                <p className="mt-3 text-[17px] text-[var(--ink-soft)]">
+                  {profile.role}
+                </p>
               </div>
               <picture className="shrink-0">
-                <source srcSet="/portrait-twitter.webp" type="image/webp" />
+                <source
+                  srcSet="/portrait-twitter-256.webp 1x, /portrait-twitter.webp 2x"
+                  type="image/webp"
+                />
                 <img
                   src={portraits.twitter.src}
                   alt={portraits.twitter.alt}
-                  width={736}
-                  height={736}
+                  width={256}
+                  height={256}
                   fetchPriority="high"
                   decoding="async"
                   className="h-[5.5rem] w-[5.5rem] rounded-[1.15rem] object-cover sm:h-28 sm:w-28"
                 />
               </picture>
             </div>
-          </motion.div>
-          <motion.div className="reveal" {...enter(play, 0.16)}>
+          </div>
+          <div>
             <p className="mt-7 max-w-[16ch] text-[1.65rem] leading-[1.15] font-medium tracking-[-0.035em] sm:mt-8 sm:text-[2rem]">
               Building useful software, from model to product.
             </p>
             <p className="mt-5 max-w-[46ch] text-[16px] leading-7 text-[var(--ink-soft)] sm:mt-6">
               {profile.heroDescription}
             </p>
-          </motion.div>
-          <motion.div className="reveal" {...enter(play, 0.26)}>
+          </div>
+          <div>
             <div className="mt-7 flex items-center gap-5 text-[14px]">
               <a
                 href={`mailto:${config.email}`}
@@ -498,12 +332,14 @@ export function ClientApp() {
               </ExternalLink>
             </div>
             <div className="mt-8 grid grid-cols-3 gap-x-4 gap-y-5 sm:mt-10 sm:gap-x-6">
-              <a href="#speech-relay" className="page-link border-t border-[var(--line)] pt-3">
+              <a
+                href="#speech-relay"
+                className="page-link border-t border-[var(--line)] pt-3"
+              >
                 <strong className="block font-mono text-[1.35rem] leading-none font-medium tracking-[-0.04em] tabular-nums text-[var(--ink)] sm:text-[1.8rem]">
                   <CountUp
                     to={speechRelayMetrics.vadComparison.reductionPercent}
                     decimals={1}
-                    active={play}
                   />
                   %
                 </strong>
@@ -514,9 +350,12 @@ export function ClientApp() {
                   Speech Relay · VAD vs fixed windows
                 </span>
               </a>
-              <a href="#open-source" className="page-link border-t border-[var(--line)] pt-3">
+              <a
+                href="#open-source"
+                className="page-link border-t border-[var(--line)] pt-3"
+              >
                 <strong className="block font-mono text-[1.35rem] leading-none font-medium tracking-[-0.04em] tabular-nums text-[var(--ink)] sm:text-[1.8rem]">
-                  <CountUp to={mergedContributionSummary.merged} active={play} />
+                  <CountUp to={mergedContributionSummary.merged} />
                 </strong>
                 <span className="mt-1.5 block text-[12px] leading-4 font-medium text-[var(--ink-soft)] sm:text-[13px]">
                   <span className="sm:hidden">merged PRs</span>
@@ -526,9 +365,12 @@ export function ClientApp() {
                   {mergedContributionSummary.repositories} repositories
                 </span>
               </a>
-              <a href="#bytewise" className="page-link border-t border-[var(--line)] pt-3">
+              <a
+                href="#bytewise"
+                className="page-link border-t border-[var(--line)] pt-3"
+              >
                 <strong className="block font-mono text-[1.35rem] leading-none font-medium tracking-[-0.04em] tabular-nums text-[var(--ink)] sm:text-[1.8rem]">
-                  <CountUp to={2} active={play} />
+                  <CountUp to={2} />
                 </strong>
                 <span className="mt-1.5 block text-[12px] leading-4 font-medium text-[var(--ink-soft)] sm:text-[13px]">
                   Google Play apps
@@ -538,22 +380,20 @@ export function ClientApp() {
                 </span>
               </a>
             </div>
-          </motion.div>
+          </div>
         </section>
 
-        <section id="projects" aria-labelledby="projects-title" className="mt-24">
-          <SectionLabel index="01" play={play}>
+        <section
+          id="projects"
+          aria-labelledby="projects-title"
+          className="mt-24"
+        >
+          <SectionLabel index="01">
             <span id="projects-title">Selected work</span>
           </SectionLabel>
           <div className="mt-6 grid items-stretch gap-3 sm:grid-cols-2">
-            {featuredProjects.map((project, index) => (
-              <ProjectRow
-                key={project.slug}
-                project={project}
-                index={index}
-                play={play}
-                onOpenNote={openNote}
-              />
+            {featuredProjects.map((project) => (
+              <ProjectRow key={project.slug} project={project} />
             ))}
           </div>
           <div className="mt-10">
@@ -568,20 +408,18 @@ export function ClientApp() {
           </div>
         </section>
 
-        <motion.section
+        <section
           id="open-source"
           aria-labelledby="open-source-title"
-          className="reveal mt-24"
-          {...reveal}
+          className="reveal-on-scroll section-deferred mt-24"
         >
-          <SectionLabel index="02" play={play}>
+          <SectionLabel index="02">
             <span id="open-source-title">Open source</span>
           </SectionLabel>
           <p className="mt-4 max-w-[52ch] text-[15px] leading-7 text-[var(--ink-soft)]">
             {mergedContributionSummary.merged} merged pull requests across{" "}
-            {mergedContributionSummary.repositories} repositories. Upstream
-            work only. The list is a local snapshot from{" "}
-            {contributionSnapshotDate}.
+            {mergedContributionSummary.repositories} repositories. Upstream work
+            only. The list is a local snapshot from {contributionSnapshotDate}.
           </p>
           <ActivityCalendar />
           <ContributionExplorer />
@@ -593,15 +431,14 @@ export function ClientApp() {
               github.com/csy20
             </ExternalLink>
           </p>
-        </motion.section>
+        </section>
 
-        <motion.section
+        <section
           id="contact"
           aria-labelledby="contact-title"
-          className="reveal mt-24"
-          {...reveal}
+          className="reveal-on-scroll section-deferred mt-24"
         >
-          <SectionLabel index="03" play={play}>
+          <SectionLabel index="03">
             <span id="contact-title">Contact</span>
           </SectionLabel>
           <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -613,41 +450,39 @@ export function ClientApp() {
             </a>
             <CopyEmailButton email={config.email} />
           </div>
-          <p className="mt-3 text-[15px] text-[var(--ink-soft)]">{profile.availability}</p>
+          <p className="mt-3 text-[15px] text-[var(--ink-soft)]">
+            {profile.availability}
+          </p>
           <ul className="mt-8 flex flex-col">
             {contactLinks.map((link) => (
-              <li key={link.href} className="draw-row border-t border-[var(--line)]">
+              <li
+                key={link.href}
+                className="draw-row border-t border-[var(--line)]"
+              >
                 <ExternalLink
                   href={link.href}
                   className="page-link flex items-baseline justify-between gap-4 py-3 text-[15px]"
                 >
                   <span className="draw-link">{link.label}</span>
-                  <span className="text-[13px] text-[var(--ink-faint)]">{link.detail}</span>
+                  <span className="text-[13px] text-[var(--ink-faint)]">
+                    {link.detail}
+                  </span>
                 </ExternalLink>
               </li>
             ))}
           </ul>
           <footer className="mt-16 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[var(--line)] pt-6 text-[13px] text-[var(--ink-faint)]">
             <a href="#hero" className="page-link text-[var(--ink)]">
-              Chitresh Yadav <span className="text-[var(--ink-faint)]">/ csy20</span>
+              Chitresh Yadav{" "}
+              <span className="text-[var(--ink-faint)]">/ csy20</span>
             </a>
             <span>Built with care. Kept in the open.</span>
-            <AfterMount>
-              <SoundToggle />
-            </AfterMount>
+            <FooterClientControls />
             <span className="sm:ml-auto">© {contributionSnapshotYear}</span>
           </footer>
-        </motion.section>
+        </section>
       </main>
-      <Opening onLeave={onLeave} />
-      <AfterMount>
-        <CaseStudyDialog
-          noteId={activeNote}
-          onClose={closeNote}
-          onNavigate={openNote}
-        />
-        {play ? <SocialDock /> : null}
-      </AfterMount>
+      <InteractiveOverlays />
     </>
   );
 }

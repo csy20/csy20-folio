@@ -125,6 +125,50 @@ export const activityRange = {
   end: activityEnd,
 };
 
+export const activityDays: readonly ActivityDay[] = activityWeeks.flatMap(
+  (week) => week.days,
+);
+
+export type ActivityStats = {
+  activeDays: number;
+  longestStreakDays: number;
+  maxDay: ActivityDay;
+};
+
+export function summarizeActivityStats(
+  weeks: readonly ActivityWeek[],
+): ActivityStats {
+  const days = weeks.flatMap((week) => week.days);
+  if (days.length === 0) {
+    throw new Error("Cannot summarize empty activity weeks.");
+  }
+
+  let activeDays = 0;
+  let currentStreak = 0;
+  let longestStreakDays = 0;
+  let maxDay = days[0];
+
+  for (const day of days) {
+    if (day.count > 0) {
+      activeDays += 1;
+      currentStreak += 1;
+      if (currentStreak > longestStreakDays) {
+        longestStreakDays = currentStreak;
+      }
+    } else {
+      currentStreak = 0;
+    }
+
+    if (day.count >= maxDay.count) {
+      maxDay = day;
+    }
+  }
+
+  return { activeDays, longestStreakDays, maxDay };
+}
+
+export const activityStats = summarizeActivityStats(activityWeeks);
+
 export function activityAriaLabel(total: number, start: string, end: string) {
   const noun = total === 1 ? "contribution" : "contributions";
   return `${total} ${noun} in the last year, from ${formatActivityDate(start)} to ${formatActivityDate(end)}.`;

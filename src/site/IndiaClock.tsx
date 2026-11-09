@@ -109,7 +109,7 @@ function RunningClock() {
         height="32"
         viewBox="0 0 32 32"
         aria-hidden="true"
-        className="h-6 w-6 shrink-0 sm:h-8 sm:w-8"
+        className="h-6 w-6 shrink-0 max-[359px]:hidden sm:h-8 sm:w-8"
       >
         <circle
           cx="16"

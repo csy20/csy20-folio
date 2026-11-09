@@ -22,6 +22,7 @@ const spaceGrotesk = localFont({
   variable: "--font-space-grotesk",
   weight: "400 700",
   display: "swap",
+  preload: false,
 });
 
 const title = "Chitresh Yadav — Backend · Applied ML";
@@ -93,7 +94,7 @@ const themeScript = `(() => {
     document.documentElement.classList.add("is-opening");
     window.setTimeout(() => {
       document.documentElement.classList.remove("is-opening");
-    }, 2500);
+    }, 1100);
   }
 })();`;
 

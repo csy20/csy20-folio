@@ -1,6 +1,11 @@
 import { act, fireEvent, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { OPENING_SESSION_KEY, Opening } from "./Opening";
+import {
+  OPENING_HOLD_MS,
+  OPENING_LEAVE_MS,
+  OPENING_SESSION_KEY,
+  Opening,
+} from "./Opening";
 
 function mockReducedMotion(reduced: boolean) {
   vi.spyOn(window, "matchMedia").mockImplementation(
@@ -51,17 +56,24 @@ describe("Opening", () => {
     expect(window.sessionStorage.getItem(OPENING_SESSION_KEY)).toBe("1");
   });
 
-  it("leaves on its own after the opening sequence and marks session seen", () => {
+  it("leaves on its own after the ~0.9s opening sequence and marks session seen", () => {
     mockReducedMotion(false);
     const onLeave = vi.fn();
-    render(<Opening onLeave={onLeave} />);
+    const { container } = render(<Opening onLeave={onLeave} />);
+
+    expect(OPENING_HOLD_MS + OPENING_LEAVE_MS).toBeLessThanOrEqual(950);
 
     act(() => {
-      vi.advanceTimersByTime(1500);
+      vi.advanceTimersByTime(OPENING_HOLD_MS + 30);
     });
 
     expect(onLeave).toHaveBeenCalledTimes(1);
     expect(window.sessionStorage.getItem(OPENING_SESSION_KEY)).toBe("1");
+
+    act(() => {
+      vi.advanceTimersByTime(OPENING_LEAVE_MS + 30);
+    });
+    expect(container).toBeEmptyDOMElement();
   });
 
   it("skips immediately on subsequent loads in the same session", () => {

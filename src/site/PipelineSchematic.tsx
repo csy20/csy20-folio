@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "motion/react";
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { speechRelayMetrics } from "@/data/siteContent";
 import { SoundContext } from "@/dock/useSound";
@@ -234,7 +233,7 @@ export function PipelineSchematic() {
               const arrowActive = activeHop < 0 || activeHop > index;
               return (
                 <li key={hop} className="flex min-w-0 items-center gap-1 sm:gap-0">
-                  <motion.span
+                  <span
                     className={`flex-1 truncate rounded-md border px-1.5 py-1 text-center transition-colors duration-150 sm:flex-none sm:px-2 ${
                       isCurrent
                         ? "border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_16%,var(--card))] text-[var(--ink)]"
@@ -242,13 +241,9 @@ export function PipelineSchematic() {
                           ? "border-[color-mix(in_srgb,var(--accent)_55%,var(--line))] bg-[var(--card)] text-[var(--ink)]"
                           : "border-[var(--line)] bg-[var(--card)]"
                     }`}
-                    initial={{ opacity: 0, y: 6 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.35, delay: index * 0.09 }}
                   >
                     {hop}
-                  </motion.span>
+                  </span>
                   {index < hops.length - 1 ? <Arrow active={arrowActive} /> : null}
                   {index < hops.length - 1 && index !== 2 ? (
                     <MobileConnector active={arrowActive} />

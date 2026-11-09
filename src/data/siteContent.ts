@@ -413,3 +413,51 @@ export const productSpotlights: ProductSpotlight[] = [
     ],
   },
 ];
+
+export function getNoteIdForProjectTitle(title: string): EngineeringNoteId | null {
+  return projects.find((item) => item.title === title)?.noteId ?? null;
+}
+
+export function parseNoteHash(hash: string): EngineeringNoteId | null {
+  const prefix = "#notes-";
+  if (!hash.startsWith(prefix)) return null;
+  const candidate = hash.slice(prefix.length);
+  return (ENGINEERING_NOTE_IDS as readonly string[]).includes(candidate)
+    ? (candidate as EngineeringNoteId)
+    : null;
+}
+
+export type ResolvedNote =
+  | { kind: "case-study"; project: Project; study: CaseStudy }
+  | { kind: "spotlight"; project: Project; spotlight: ProductSpotlight };
+
+export function resolveNote(id: EngineeringNoteId): ResolvedNote {
+  const study = caseStudies.find((item) => item.id === id);
+  if (study) {
+    const project = projects.find((item) => item.title === study.title);
+    if (!project) throw new Error(`Missing project for case study: ${study.title}`);
+    return { kind: "case-study", project, study };
+  }
+  const spotlight = productSpotlights.find((item) => item.id === id);
+  if (spotlight) {
+    const project = projects.find((item) => item.title === spotlight.title);
+    if (!project) throw new Error(`Missing project for spotlight: ${spotlight.title}`);
+    return { kind: "spotlight", project, spotlight };
+  }
+  throw new Error(`Unknown engineering note: ${id}`);
+}
+
+export function getAdjacentNotes(id: EngineeringNoteId) {
+  const index = ENGINEERING_NOTE_IDS.indexOf(id);
+  const total = ENGINEERING_NOTE_IDS.length;
+  const prevId = ENGINEERING_NOTE_IDS[(index - 1 + total) % total];
+  const nextId = ENGINEERING_NOTE_IDS[(index + 1) % total];
+  return {
+    index,
+    total,
+    prevId,
+    nextId,
+    prevTitle: resolveNote(prevId).project.title,
+    nextTitle: resolveNote(nextId).project.title,
+  };
+}

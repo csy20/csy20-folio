@@ -1,6 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  activityDays,
+  activityStats,
   activityTotal,
   activityWeeks,
   formatActivityCaption,
@@ -69,5 +71,28 @@ describe("ActivityCalendar", () => {
 
     fireEvent.pointerDown(cell);
     expect(screen.getByText(formatActivityCaption(day))).toBeInTheDocument();
+  });
+
+  it("supports keyboard roving focus across days and surfaces active-day telemetry", () => {
+    render(<ActivityCalendar />);
+    expect(
+      screen.getByText(new RegExp(`${activityStats.activeDays} active days`)),
+    ).toBeInTheDocument();
+
+    const lastDay = activityDays.at(-1)!;
+    const prevDay = activityDays.at(-2)!;
+    const lastCell = document.querySelector<HTMLElement>(
+      `[data-date="${lastDay.date}"]`,
+    )!;
+    expect(lastCell).toHaveAttribute("tabindex", "0");
+
+    fireEvent.focus(lastCell);
+    expect(screen.getByText(formatActivityCaption(lastDay))).toBeInTheDocument();
+
+    fireEvent.keyDown(screen.getByRole("img"), { key: "ArrowUp" });
+    expect(screen.getByText(formatActivityCaption(prevDay))).toBeInTheDocument();
+    expect(
+      document.querySelector(`[data-date="${prevDay.date}"]`),
+    ).toHaveAttribute("tabindex", "0");
   });
 });

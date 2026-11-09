@@ -1,5 +1,12 @@
-import { useEffect, useState, type PointerEvent, type ReactNode } from "react";
-import { motion } from "motion/react";
+"use client";
+
+import {
+  useEffect,
+  useState,
+  type CSSProperties,
+  type PointerEvent,
+  type ReactNode,
+} from "react";
 import { socialLinks } from "../data/siteContent";
 import { useTheme } from "./useTheme";
 import { Icon } from "./ui/Icon";
@@ -40,19 +47,21 @@ export function SocialDock() {
   const controlMotion = (index: number) => {
     const distance =
       hoveredIndex === null ? Infinity : Math.abs(hoveredIndex - index);
-    return {
-      animate:
-        canMagnify && distance < 2
-          ? {
-              scale: distance === 0 ? 1.18 : 1.08,
-              y: distance === 0 ? -8 : -4,
-            }
-          : { scale: 1, y: 0 },
+    const scale =
+      canMagnify && distance < 2 ? (distance === 0 ? 1.18 : 1.08) : 1;
+    const translateY =
+      canMagnify && distance < 2 ? (distance === 0 ? -8 : -4) : 0;
+
+    const style: CSSProperties = {
+      transformOrigin: "bottom center",
+      transform: `translateY(${translateY}px) scale(${scale})`,
       transition: canMagnify
-        ? { type: "spring" as const, stiffness: 400, damping: 28 }
-        : { duration: 0 },
-      ...(canMagnify ? { whileTap: { scale: 0.92 } } : {}),
-      style: { transformOrigin: "bottom center" },
+        ? "transform 220ms cubic-bezier(0.22, 1.35, 0.36, 1), background-color 150ms, color 150ms"
+        : undefined,
+    };
+
+    return {
+      style,
       onPointerEnter: (event: PointerEvent<HTMLElement>) => {
         if (event.pointerType === "touch") return;
         if (canMagnify) setHoveredIndex(index);
@@ -73,7 +82,7 @@ export function SocialDock() {
       aria-label="Social shortcuts"
       onPointerLeave={() => setHoveredIndex(null)}
     >
-      <motion.a
+      <a
         className="dock-item"
         href="#hero"
         aria-label="Home"
@@ -84,11 +93,11 @@ export function SocialDock() {
         <span className="dock-tooltip" aria-hidden="true">
           Home
         </span>
-      </motion.a>
+      </a>
       {dockLinks.map((link, index) => {
         const external = !link.href.startsWith("mailto:");
         return (
-          <motion.a
+          <a
             key={link.icon}
             className="dock-item"
             href={link.href}
@@ -106,10 +115,10 @@ export function SocialDock() {
                   ? "Threads"
                   : link.label}
             </span>
-          </motion.a>
+          </a>
         );
       })}
-      <motion.button
+      <button
         className="dock-item"
         type="button"
         aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
@@ -128,7 +137,7 @@ export function SocialDock() {
         <span className="dock-tooltip" aria-hidden="true">
           {theme === "dark" ? "Light theme" : "Dark theme"}
         </span>
-      </motion.button>
+      </button>
     </nav>
   );
 }

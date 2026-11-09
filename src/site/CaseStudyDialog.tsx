@@ -2,65 +2,20 @@
 
 import { useEffect, useRef, type MouseEvent } from "react";
 import {
-  ENGINEERING_NOTE_IDS,
-  caseStudies,
-  productSpotlights,
-  projects,
-  type CaseStudy,
+  getAdjacentNotes,
+  resolveNote,
   type EngineeringNoteId,
-  type ProductSpotlight,
-  type Project,
 } from "@/data/siteContent";
 
-export { ENGINEERING_NOTE_IDS, type EngineeringNoteId } from "@/data/siteContent";
-
-export function getNoteIdForProjectTitle(title: string): EngineeringNoteId | null {
-  return projects.find((item) => item.title === title)?.noteId ?? null;
-}
-
-export function parseNoteHash(hash: string): EngineeringNoteId | null {
-  const prefix = "#notes-";
-  if (!hash.startsWith(prefix)) return null;
-  const candidate = hash.slice(prefix.length);
-  return (ENGINEERING_NOTE_IDS as readonly string[]).includes(candidate)
-    ? (candidate as EngineeringNoteId)
-    : null;
-}
-
-type ResolvedNote =
-  | { kind: "case-study"; project: Project; study: CaseStudy }
-  | { kind: "spotlight"; project: Project; spotlight: ProductSpotlight };
-
-function resolveNote(id: EngineeringNoteId): ResolvedNote {
-  const study = caseStudies.find((item) => item.id === id);
-  if (study) {
-    const project = projects.find((item) => item.title === study.title);
-    if (!project) throw new Error(`Missing project for case study: ${study.title}`);
-    return { kind: "case-study", project, study };
-  }
-  const spotlight = productSpotlights.find((item) => item.id === id);
-  if (spotlight) {
-    const project = projects.find((item) => item.title === spotlight.title);
-    if (!project) throw new Error(`Missing project for spotlight: ${spotlight.title}`);
-    return { kind: "spotlight", project, spotlight };
-  }
-  throw new Error(`Unknown engineering note: ${id}`);
-}
-
-function getAdjacentNotes(id: EngineeringNoteId) {
-  const index = ENGINEERING_NOTE_IDS.indexOf(id);
-  const total = ENGINEERING_NOTE_IDS.length;
-  const prevId = ENGINEERING_NOTE_IDS[(index - 1 + total) % total];
-  const nextId = ENGINEERING_NOTE_IDS[(index + 1) % total];
-  return {
-    index,
-    total,
-    prevId,
-    nextId,
-    prevTitle: resolveNote(prevId).project.title,
-    nextTitle: resolveNote(nextId).project.title,
-  };
-}
+export {
+  ENGINEERING_NOTE_IDS,
+  getAdjacentNotes,
+  getNoteIdForProjectTitle,
+  parseNoteHash,
+  resolveNote,
+  type EngineeringNoteId,
+  type ResolvedNote,
+} from "@/data/siteContent";
 
 function openModalDialog(dialog: HTMLDialogElement) {
   if (dialog.open) return;
@@ -266,7 +221,15 @@ export function CaseStudyDialog({
             ) : (
               <span />
             )}
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              { noteId ? (
+                <a
+                  href={`/notes/${noteId}`}
+                  className="page-link font-mono text-[12px] text-[var(--ink-soft)] underline-offset-4 hover:text-[var(--ink)] hover:underline"
+                >
+                  Permalink
+                </a>
+              ) : null}
               {resolved.project.links.map((link) => (
                 <a
                   key={link.href}

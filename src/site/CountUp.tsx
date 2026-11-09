@@ -1,17 +1,14 @@
 "use client";
 
-import {
-  animate,
-  motion,
-  useInView,
-  useMotionValue,
-  useTransform,
-} from "motion/react";
-import { useEffect, useRef } from "react";
-import { ease, useHydrated, usePrefersReducedMotion } from "./motion";
+import { useEffect, useRef, useState } from "react";
+import { useHydrated, usePrefersReducedMotion } from "./motion";
 
 function formatCount(value: number, decimals: number) {
   return decimals > 0 ? value.toFixed(decimals) : String(Math.round(value));
+}
+
+function easeOutCubic(t: number): number {
+  return 1 - Math.pow(1 - t, 3);
 }
 
 export function CountUp({
@@ -24,22 +21,51 @@ export function CountUp({
   active?: boolean;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, margin: "0px 0px -40px 0px" });
   const hydrated = useHydrated();
   const reduced = usePrefersReducedMotion();
-  const value = useMotionValue(0);
-  const text = useTransform(value, (latest) => formatCount(latest, decimals));
   const finalText = formatCount(to, decimals);
+  const [inView, setInView] = useState(
+    () => typeof window !== "undefined" && typeof IntersectionObserver === "undefined",
+  );
+  const [display, setDisplay] = useState(() => formatCount(0, decimals));
 
   useEffect(() => {
-    if (!active || !inView) return;
-    if (reduced) {
-      value.set(to);
-      return;
-    }
-    const controls = animate(value, to, { duration: 0.9, ease });
-    return () => controls.stop();
-  }, [active, inView, reduced, to, value]);
+    const node = ref.current;
+    if (!node || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setInView(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "0px 0px -40px 0px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!active || !inView || reduced || typeof window === "undefined") return;
+
+    const durationMs = 900;
+    const start = performance.now();
+    let rafId = 0;
+
+    const tick = (now: number) => {
+      const progress = Math.min(1, Math.max(0, (now - start) / durationMs));
+      const eased = easeOutCubic(progress);
+      setDisplay(formatCount(to * eased, decimals));
+      if (progress < 1) {
+        rafId = window.requestAnimationFrame(tick);
+      }
+    };
+
+    rafId = window.requestAnimationFrame(tick);
+    return () => {
+      if (rafId) window.cancelAnimationFrame(rafId);
+    };
+  }, [active, decimals, inView, reduced, to]);
 
   return (
     <span className="inline-grid tabular-nums">
@@ -49,12 +75,9 @@ export function CountUp({
       >
         {finalText}
       </span>
-      <motion.span
-        ref={ref}
-        className="col-start-1 row-start-1 text-left"
-      >
-        {hydrated ? text : finalText}
-      </motion.span>
+      <span ref={ref} className="col-start-1 row-start-1 text-left">
+        {hydrated ? (reduced ? finalText : display) : finalText}
+      </span>
     </span>
   );
 }

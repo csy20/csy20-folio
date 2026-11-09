@@ -11,7 +11,8 @@
     "check": "tsc --noEmit && eslint && vitest run",
     "data:activity": "node scripts/update-activity.mjs",
     "data:contributions": "node scripts/update-contributions.mjs",
-    "data:refresh": "npm run data:activity && npm run data:contributions"
+    "data:refresh": "npm run data:activity && npm run data:contributions",
+    "optimize:assets": "node scripts/optimize-assets.mjs"
   },
   "dependencies": {
     "motion": "^14.10.1",

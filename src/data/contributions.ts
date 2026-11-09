@@ -147,3 +147,36 @@ export function describeContributionTimeline(
     daysToMerge: Math.max(0, Math.floor(elapsed / 86_400_000)),
   };
 }
+
+export type MergeTurnaroundSummary = {
+  total: number;
+  sameDay: number;
+  withinWeek: number;
+  longer: number;
+};
+
+export function summarizeMergeTurnaround(
+  records: readonly Pick<Contribution, "createdAt" | "mergedAt">[],
+): MergeTurnaroundSummary {
+  let sameDay = 0;
+  let withinWeek = 0;
+  let longer = 0;
+
+  for (const record of records) {
+    const { daysToMerge } = describeContributionTimeline(record);
+    if (daysToMerge === null) continue;
+    if (daysToMerge === 0) sameDay += 1;
+    else if (daysToMerge <= 7) withinWeek += 1;
+    else longer += 1;
+  }
+
+  return {
+    total: sameDay + withinWeek + longer,
+    sameDay,
+    withinWeek,
+    longer,
+  };
+}
+
+export const mergedTurnaroundSummary =
+  summarizeMergeTurnaround(mergedContributions);

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { config } from "@/config";
 import {
   describeContributionTimeline,
@@ -11,7 +12,10 @@ import {
   isGerritContribution,
   mergedContributionRepositories,
   mergedContributions,
+  summarizeMergeTurnaround,
 } from "@/data/contributions";
+import { SoundContext } from "@/dock/useSound";
+import { prefersReducedMotion } from "./motion";
 
 const featuredContributionUrls = [
   "https://dart-review.googlesource.com/c/sdk/+/558101",
@@ -59,6 +63,103 @@ const activePillClass =
   "border-[color-mix(in_srgb,var(--pr)_55%,var(--line))] bg-[color-mix(in_srgb,var(--pr)_12%,var(--card))] text-[var(--ink)]";
 const idlePillClass =
   "border-[var(--line)] bg-[var(--card)] text-[var(--ink-soft)] hover:border-[var(--ink-faint)] hover:text-[var(--ink)]";
+
+type ElementWithScopedTransition = HTMLElement & {
+  startViewTransition?: (callback: () => void) => {
+    ready: Promise<void>;
+  };
+};
+
+function runScopedTransition(
+  scopeEl: HTMLElement | null,
+  updateDOM: () => void,
+) {
+  const el = scopeEl as ElementWithScopedTransition | null;
+  if (
+    !el ||
+    typeof el.startViewTransition !== "function" ||
+    prefersReducedMotion()
+  ) {
+    updateDOM();
+    return;
+  }
+
+  try {
+    const transition = el.startViewTransition(() => {
+      flushSync(updateDOM);
+    });
+    transition.ready?.catch(() => {});
+  } catch {
+    updateDOM();
+  }
+}
+
+function TurnaroundBar({
+  records,
+}: {
+  records: typeof mergedContributions;
+}) {
+  const summary = summarizeMergeTurnaround(records);
+  if (summary.total === 0) return null;
+
+  const samePct = (summary.sameDay / summary.total) * 100;
+  const weekPct = (summary.withinWeek / summary.total) * 100;
+  const longerPct = (summary.longer / summary.total) * 100;
+
+  return (
+    <div
+      aria-label="Pull request merge turnaround distribution"
+      className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--line)] bg-[var(--card)] px-3 py-2 font-mono text-[11px] text-[var(--ink-faint)]"
+    >
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span className="text-[var(--ink-soft)]">Merge velocity</span>
+        <span className="tabular-nums">
+          <strong className="font-medium text-[var(--ink)]">
+            {summary.sameDay}
+          </strong>{" "}
+          same-day
+        </span>
+        <span className="tabular-nums">
+          <strong className="font-medium text-[var(--ink)]">
+            {summary.withinWeek}
+          </strong>{" "}
+          1–7d
+        </span>
+        {summary.longer > 0 ? (
+          <span className="tabular-nums">
+            <strong className="font-medium text-[var(--ink)]">
+              {summary.longer}
+            </strong>{" "}
+            &gt;7d
+          </span>
+        ) : null}
+      </div>
+      <div
+        aria-hidden="true"
+        className="flex h-1.5 w-24 shrink-0 overflow-hidden rounded-full bg-[var(--logo-well)]"
+      >
+        {samePct > 0 ? (
+          <span
+            className="h-full bg-[var(--pr)]"
+            style={{ width: `${samePct}%` }}
+          />
+        ) : null}
+        {weekPct > 0 ? (
+          <span
+            className="h-full bg-[color-mix(in_srgb,var(--pr)_55%,transparent)]"
+            style={{ width: `${weekPct}%` }}
+          />
+        ) : null}
+        {longerPct > 0 ? (
+          <span
+            className="h-full bg-[color-mix(in_srgb,var(--ink)_25%,transparent)]"
+            style={{ width: `${longerPct}%` }}
+          />
+        ) : null}
+      </div>
+    </div>
+  );
+}
 
 function ContributionList({
   records,
@@ -134,26 +235,65 @@ function ContributionList({
 
 export function ContributionExplorer() {
   const [selectedRepo, setSelectedRepo] = useState<string | null>(null);
+  const scopeRef = useRef<HTMLDivElement>(null);
+  const sound = useContext(SoundContext);
+
+  const selectRepoWithTransition = (nextRepo: string | null) => {
+    sound?.playDockTick();
+    runScopedTransition(scopeRef.current, () => {
+      setSelectedRepo(nextRepo);
+    });
+  };
+
+  useEffect(() => {
+    const syncPrHash = () => {
+      const hash = window.location.hash;
+      if (!hash.startsWith("#pr-")) return;
+      const domId = hash.slice(1);
+      const inMore = moreContributions.some(
+        (record) => getContributionDomId(record) === domId,
+      );
+      if (inMore) {
+        const moreDetails = document.getElementById(
+          "more-contributions-details",
+        ) as HTMLDetailsElement | null;
+        if (moreDetails) moreDetails.open = true;
+      }
+      const target = document.getElementById(
+        domId,
+      ) as HTMLDetailsElement | null;
+      if (target) {
+        target.open = true;
+        target.scrollIntoView?.({ block: "nearest" });
+      }
+    };
+
+    syncPrHash();
+    window.addEventListener("hashchange", syncPrHash);
+    return () => window.removeEventListener("hashchange", syncPrHash);
+  }, []);
 
   const filteredContributions = selectedRepo
     ? mergedContributions.filter((record) => record.repository === selectedRepo)
     : null;
+
+  const activeRecords = filteredContributions ?? mergedContributions;
 
   const repoMergedQueryUrl = selectedRepo
     ? getRepositoryContributionsUrl(selectedRepo, config.githubUsername)
     : null;
 
   return (
-    <>
+    <div ref={scopeRef}>
       <div
         role="group"
         aria-label="Filter pull requests by repository"
-        className="mt-6 mb-5 flex flex-wrap gap-1.5 font-mono text-[11.5px]"
+        className="mt-6 mb-4 flex flex-wrap gap-1.5 font-mono text-[11.5px]"
       >
         <button
           type="button"
           aria-pressed={selectedRepo === null}
-          onClick={() => setSelectedRepo(null)}
+          onClick={() => selectRepoWithTransition(null)}
           className={`folio-btn cursor-pointer rounded-lg border px-2.5 py-1 transition-colors ${
             selectedRepo === null ? activePillClass : idlePillClass
           }`}
@@ -170,7 +310,9 @@ export function ContributionExplorer() {
               key={item.repository}
               type="button"
               aria-pressed={active}
-              onClick={() => setSelectedRepo(active ? null : item.repository)}
+              onClick={() =>
+                selectRepoWithTransition(active ? null : item.repository)
+              }
               className={`folio-btn cursor-pointer rounded-lg border px-2.5 py-1 transition-colors ${
                 active ? activePillClass : idlePillClass
               }`}
@@ -183,6 +325,8 @@ export function ContributionExplorer() {
           );
         })}
       </div>
+
+      <TurnaroundBar records={activeRecords} />
 
       {selectedRepo && filteredContributions && repoMergedQueryUrl ? (
         <div>
@@ -201,7 +345,7 @@ export function ContributionExplorer() {
             </span>
             <button
               type="button"
-              onClick={() => setSelectedRepo(null)}
+              onClick={() => selectRepoWithTransition(null)}
               className="folio-btn cursor-pointer text-[var(--ink-soft)] underline-offset-4 hover:text-[var(--ink)] hover:underline"
             >
               Show all repos
@@ -232,6 +376,6 @@ export function ContributionExplorer() {
           ) : null}
         </>
       )}
-    </>
+    </div>
   );
 }

@@ -88,6 +88,15 @@
   width: min(432px, calc(100% - 24px));
   height: 64px;
   font-family: var(--font-space-grotesk), "Space Grotesk", sans-serif;
+  transition:
+    opacity 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html:has(.folio-dialog[open]) .dock-shell {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(24px);
 }
 
 .dock-item {
@@ -197,8 +206,8 @@
 
 @media (max-width: 767px) {
   .dock-shell {
-    height: 64px;
-    padding: 9px 10px;
+    height: 56px;
+    padding: 6px 10px;
   }
 
   .dock-item {

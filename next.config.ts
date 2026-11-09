@@ -6,6 +6,10 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   devIndicators: false,
+  experimental: {
+    inlineCss: true,
+    optimizePackageImports: ["motion/react"],
+  },
   turbopack: {
     root: path.dirname(fileURLToPath(import.meta.url)),
     rules: {

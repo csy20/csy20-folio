@@ -14,13 +14,13 @@ export function SectionNav() {
   const active = useActiveSection(ids);
 
   return (
-    <nav aria-label="Sections" className="flex items-center gap-2.5 sm:gap-5">
+    <nav aria-label="Sections" className="flex items-center gap-2 sm:gap-5">
       {links.map((link) => (
         <a
           key={link.id}
           href={`#${link.id}`}
           aria-current={active === link.id ? "location" : undefined}
-          className="page-link border-b border-transparent pb-0.5 text-[12.5px] text-[var(--ink-faint)] transition-colors aria-[current=location]:border-[var(--accent)] aria-[current=location]:text-[var(--ink)] sm:text-[13px]"
+          className="page-link border-b border-transparent pb-0.5 text-[12.5px] text-[var(--ink-faint)] transition-[color,border-color] duration-150 aria-[current=location]:border-[var(--accent)] aria-[current=location]:text-[var(--ink)] sm:text-[13px]"
         >
           {link.short !== link.label ? (
             <>

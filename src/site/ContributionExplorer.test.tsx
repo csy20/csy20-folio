@@ -87,4 +87,19 @@ describe("ContributionExplorer", () => {
       expect.stringContaining("https://dart-review.googlesource.com/"),
     );
   });
+
+  it("displays merge velocity distribution and expands deep-linked PR hashes", () => {
+    window.history.replaceState(null, "", "#pr-dart-lang-sdk-558101");
+    render(<ContributionExplorer />);
+
+    expect(
+      screen.getByLabelText("Pull request merge turnaround distribution"),
+    ).toHaveTextContent(/Merge velocity/i);
+
+    const details = document.getElementById(
+      "pr-dart-lang-sdk-558101",
+    ) as HTMLDetailsElement | null;
+    expect(details?.open).toBe(true);
+    window.history.replaceState(null, "", window.location.pathname);
+  });
 });

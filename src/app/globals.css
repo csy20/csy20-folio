@@ -89,6 +89,11 @@ summary:focus-visible {
   border-bottom: 1px solid transparent;
 }
 
+.scroll-progress-bar {
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
 @supports (animation-timeline: scroll()) {
   @keyframes header-hairline {
     from {
@@ -103,6 +108,22 @@ summary:focus-visible {
     animation: header-hairline linear both;
     animation-timeline: scroll(root);
     animation-range: 16px 56px;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    @keyframes scroll-progress-scale {
+      from {
+        transform: scaleX(0);
+      }
+      to {
+        transform: scaleX(1);
+      }
+    }
+
+    .scroll-progress-bar {
+      animation: scroll-progress-scale linear both;
+      animation-timeline: scroll(root);
+    }
   }
 }
 
@@ -168,14 +189,51 @@ html.is-theme-transitioning::view-transition-new(root) {
   overscroll-behavior: contain;
 }
 
-html.is-opening main {
-  opacity: 0;
+.section-deferred {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 680px;
 }
 
 .section-rule {
   height: 1px;
   transform-origin: left center;
   background: color-mix(in srgb, var(--ink) 28%, transparent);
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    @keyframes reveal-up {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes draw-rule {
+      from {
+        transform: scaleX(0);
+      }
+      to {
+        transform: scaleX(1);
+      }
+    }
+
+    .reveal-on-scroll {
+      animation: reveal-up cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 22%;
+    }
+
+    .section-rule {
+      animation: draw-rule cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 22%;
+    }
+  }
 }
 
 .draw-link {
@@ -192,17 +250,28 @@ html.is-opening main {
 
 @media (hover: hover) and (pointer: fine) {
   .work-card {
+    position: relative;
+    overflow: hidden;
     transition: border-color 0.2s, box-shadow 0.25s;
   }
 
-  .work-card {
-    position: relative;
-    background-image: radial-gradient(
-      220px circle at var(--mx, 50%) var(--my, 50%),
-      color-mix(in srgb, var(--accent) 10%, transparent),
+  .work-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(
+      240px circle at var(--mx, 50%) var(--my, 50%),
+      color-mix(in srgb, var(--accent) 11%, transparent),
       transparent 70%
     );
-    background-repeat: no-repeat;
+    opacity: 0;
+    transition: opacity 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .work-card:hover::before,
+  .work-card:focus-within::before {
+    opacity: 1;
   }
 
   .work-card:hover {
@@ -251,19 +320,24 @@ details[open] > .show-all-panel {
     scroll-behavior: auto;
   }
 
-  html.is-opening main {
-    opacity: 1;
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
 
-  .opening-curtain {
+  .opening-curtain,
+  .scroll-progress-bar {
     display: none;
   }
 
   .reveal,
+  .reveal-on-scroll,
   .section-index,
   .work-card {
     opacity: 1 !important;
     transform: none !important;
+    animation: none !important;
   }
 
   .section-rule,
@@ -278,6 +352,19 @@ details[open] > .show-all-panel {
   .folio-dialog {
     transition: none !important;
   }
+}
+
+@keyframes opening-hop-pulse {
+  from {
+    opacity: 0.25;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.opening-hop {
+  animation: opening-hop-pulse 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes colon-blink {
