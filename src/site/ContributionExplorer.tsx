@@ -18,6 +18,7 @@ import { SoundContext } from "@/dock/useSound";
 import { prefersReducedMotion } from "./motion";
 
 const featuredContributionUrls = [
+  "https://dart-review.googlesource.com/c/sdk/+/575740",
   "https://dart-review.googlesource.com/c/sdk/+/558101",
   "https://dart-review.googlesource.com/c/sdk/+/569580",
   "https://github.com/semantica-agi/semantica/pull/1922",

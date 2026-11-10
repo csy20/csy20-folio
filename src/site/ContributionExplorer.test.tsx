@@ -12,10 +12,10 @@ describe("ContributionExplorer", () => {
     const buttons = within(group).getAllByRole("button");
 
     expect(buttons).toHaveLength(8);
-    expect(buttons[0]).toHaveTextContent("All15");
+    expect(buttons[0]).toHaveTextContent("All16");
     expect(buttons[0]).toHaveAttribute("aria-pressed", "true");
     expect(buttons[1]).toHaveTextContent("semantica-agi/semantica7");
-    expect(buttons[2]).toHaveTextContent("dart-lang/sdk3");
+    expect(buttons[2]).toHaveTextContent("dart-lang/sdk4");
     expect(buttons[3]).toHaveTextContent("redhat-et/ripwire1");
     expect(buttons[4]).toHaveTextContent("internetarchive/openlibrary1");
   });
@@ -23,7 +23,7 @@ describe("ContributionExplorer", () => {
   it("filters merged pull requests by repository and resets cleanly", () => {
     render(<ContributionExplorer />);
 
-    expect(screen.getByText("Show all 15")).toBeInTheDocument();
+    expect(screen.getByText("Show all 16")).toBeInTheDocument();
 
     const cogneePill = screen.getByRole("button", {
       name: /topoteretes\/cognee/i,
@@ -31,7 +31,7 @@ describe("ContributionExplorer", () => {
     fireEvent.click(cogneePill);
 
     expect(cogneePill).toHaveAttribute("aria-pressed", "true");
-    expect(screen.queryByText("Show all 15")).not.toBeInTheDocument();
+    expect(screen.queryByText("Show all 16")).not.toBeInTheDocument();
     expect(
       screen.getByText(
         "fix(ingestion): keep WHERE clause for schema-qualified SQL tables",
@@ -49,7 +49,7 @@ describe("ContributionExplorer", () => {
     // Clicking the active pill toggles back to All
     fireEvent.click(cogneePill);
     expect(cogneePill).toHaveAttribute("aria-pressed", "false");
-    expect(screen.getByText("Show all 15")).toBeInTheDocument();
+    expect(screen.getByText("Show all 16")).toBeInTheDocument();
   });
 
   it("links Dart SDK contributions to Gerrit review", () => {
@@ -61,6 +61,9 @@ describe("ContributionExplorer", () => {
     fireEvent.click(dartPill);
 
     expect(
+      screen.getByText("[analysis_server] Fix named initializing formals"),
+    ).toBeInTheDocument();
+    expect(
       screen.getByText(
         "[analysis_server] Track resource provider I/O timings since startup",
       ),
@@ -69,7 +72,12 @@ describe("ContributionExplorer", () => {
       screen
         .getAllByRole("link", { name: "View change on Gerrit", hidden: true })
         .map((link) => link.getAttribute("href")),
-    ).toContain("https://dart-review.googlesource.com/c/sdk/+/558101");
+    ).toEqual(
+      expect.arrayContaining([
+        "https://dart-review.googlesource.com/c/sdk/+/575740",
+        "https://dart-review.googlesource.com/c/sdk/+/558101",
+      ]),
+    );
     expect(
       screen.getByText(
         "[analysis_server] Add a fix for use_is_even_rather_than_modulo",
