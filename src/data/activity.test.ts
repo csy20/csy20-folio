@@ -47,9 +47,13 @@ describe("activity calendar snapshot", () => {
 
   it("spaces month labels so neighboring names do not collide", () => {
     const labels = monthLabelColumns(activityWeeks);
+    const startMonth = new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      timeZone: "UTC",
+    }).format(new Date(`${activityRange.start}T00:00:00Z`));
 
     expect(labels.length).toBeGreaterThanOrEqual(8);
-    expect(labels[0]).toEqual({ column: 0, label: "Nov" });
+    expect(labels[0]).toEqual({ column: 0, label: startMonth });
     for (let index = 1; index < labels.length; index += 1) {
       expect(labels[index].column - labels[index - 1].column).toBeGreaterThanOrEqual(3);
     }
