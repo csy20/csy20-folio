@@ -38,7 +38,7 @@ function useDockMagnification() {
   return allowed;
 }
 
-export function SocialDock() {
+export function SocialDock({ homeHref = "#hero" }: { homeHref?: string } = {}) {
   const { theme, toggleTheme } = useTheme();
   const { playDockTick } = useSound();
   const canMagnify = useDockMagnification();
@@ -84,7 +84,7 @@ export function SocialDock() {
     >
       <a
         className="dock-item"
-        href="#hero"
+        href={homeHref}
         aria-label="Home"
         {...controlMotion(0)}
         onClick={playDockTick}

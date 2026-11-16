@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -114,35 +114,61 @@ async function discoverAllUpstream() {
   return records;
 }
 
-const args = process.argv.slice(2);
-const existing = JSON.parse(readFileSync(destination, "utf8"));
-const byUrl = new Map(existing.records.map((record) => [record.url, record]));
-
-if (args.includes("--discover")) {
-  for (const record of await discoverAllUpstream()) {
-    byUrl.set(record.url, record);
-  }
-} else if (args.length > 0) {
-  for (const url of args) {
-    const record = await fetchRecordByUrl(url);
-    byUrl.set(record.url, record);
-  }
-} else {
-  for (const url of byUrl.keys()) {
-    byUrl.set(url, await fetchRecordByUrl(url));
-  }
+export function sortContributionRecords(records) {
+  return [...records].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
-const records = [...byUrl.values()].sort((a, b) =>
-  b.updatedAt.localeCompare(a.updatedAt),
-);
+export function buildContributionSnapshot(existing, records, now = new Date()) {
+  const sorted = sortContributionRecords(records);
+  const unchanged =
+    existing?.total === sorted.length &&
+    JSON.stringify(existing?.records) === JSON.stringify(sorted);
 
-const nextSnapshot = {
-  ...existing,
-  generatedAt: new Date().toISOString(),
-  total: records.length,
-  records,
-};
+  return {
+    unchanged,
+    snapshot: {
+      ...existing,
+      generatedAt: unchanged ? existing.generatedAt : now.toISOString(),
+      total: sorted.length,
+      records: sorted,
+    },
+  };
+}
 
-writeFileSync(destination, `${JSON.stringify(nextSnapshot, null, 2)}\n`);
-console.log(`${records.length} contribution records written to ${destination}`);
+export async function run(args = process.argv.slice(2)) {
+  const existing = JSON.parse(readFileSync(destination, "utf8"));
+  const byUrl = new Map(existing.records.map((record) => [record.url, record]));
+
+  if (args.includes("--discover")) {
+    for (const record of await discoverAllUpstream()) {
+      byUrl.set(record.url, record);
+    }
+  } else if (args.length > 0) {
+    for (const url of args) {
+      const record = await fetchRecordByUrl(url);
+      byUrl.set(record.url, record);
+    }
+  } else {
+    for (const url of byUrl.keys()) {
+      byUrl.set(url, await fetchRecordByUrl(url));
+    }
+  }
+
+  const { unchanged, snapshot } = buildContributionSnapshot(
+    existing,
+    [...byUrl.values()],
+  );
+
+  if (unchanged) {
+    console.log(`${snapshot.total} contribution records, unchanged`);
+    return;
+  }
+
+  writeFileSync(destination, `${JSON.stringify(snapshot, null, 2)}\n`);
+  console.log(`${snapshot.total} contribution records written to ${destination}`);
+}
+
+const entryPoint = process.argv[1] ? realpathSync(process.argv[1]) : null;
+if (entryPoint === fileURLToPath(import.meta.url)) {
+  await run();
+}

@@ -25,8 +25,8 @@ const spaceGrotesk = localFont({
   preload: false,
 });
 
-const title = "Chitresh Yadav — Backend · Applied ML";
-const description = "Building useful software, from model to product.";
+const title = `${profile.name} — ${profile.role}`;
+const description = profile.tagline;
 
 export const metadata: Metadata = {
   metadataBase: new URL(config.siteUrl),
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     url: "/",
-    siteName: "csy20",
+    siteName: profile.handle,
     title,
     description,
   },
@@ -60,12 +60,14 @@ export const viewport: Viewport = {
 const personJsonLd = {
   "@context": "https://schema.org",
   "@type": "Person",
+  "@id": `${config.siteUrl}/#person`,
   name: profile.name,
   alternateName: profile.handle,
   jobTitle: profile.role,
   description: profile.heroDescription,
   url: config.siteUrl,
   image: `${config.siteUrl}${portraits.twitter.src}`,
+  knowsAbout: profile.knowsAbout,
   sameAs: socialLinks
     .filter((link) => link.icon !== "email")
     .map((link) => link.href),
@@ -109,7 +111,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full">
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(personJsonLd).replace(/</g, "\\u003c"),
+          }}
         />
         <Script
           id="theme-prepaint"

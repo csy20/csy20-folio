@@ -9,6 +9,8 @@ import {
 import {
   alsoProjects,
   featuredProjects,
+  playStoreProjects,
+  playStoreProjectSummary,
   portraits,
   profile,
   resumeUrl,
@@ -153,7 +155,7 @@ function ProjectRow({ project }: { project: Project }) {
                 width={64}
                 height={64}
                 className={`work-logo h-11 w-11 shrink-0 rounded-[0.85rem] object-contain ${
-                  project.slug === "02-os" ? "bg-white" : "bg-[var(--logo-well)]"
+                  project.logoWell === "white" ? "bg-white" : "bg-[var(--logo-well)]"
                 }`}
               />
             ) : null}
@@ -166,9 +168,9 @@ function ProjectRow({ project }: { project: Project }) {
               </p>
             </div>
           </div>
-          {project.slug === "02-os" ? (
+          {project.showTags ? (
             <ul
-              aria-label="02_OS technologies"
+              aria-label={`${project.title} technologies`}
               className="hidden shrink-0 items-center gap-1.5 font-mono text-[11px] text-[var(--ink-soft)] sm:flex"
             >
               {project.tags.map((tag) => (
@@ -310,7 +312,7 @@ export function ClientApp() {
           </div>
           <div>
             <p className="mt-7 max-w-[16ch] text-[1.65rem] leading-[1.15] font-medium tracking-[-0.035em] sm:mt-8 sm:text-[2rem]">
-              Building useful software, from model to product.
+              {profile.tagline}
             </p>
             <p className="mt-5 max-w-[46ch] text-[16px] leading-7 text-[var(--ink-soft)] sm:mt-6">
               {profile.heroDescription}
@@ -366,17 +368,17 @@ export function ClientApp() {
                 </span>
               </a>
               <a
-                href="#bytewise"
+                href={`#${playStoreProjects[0]?.slug ?? "projects"}`}
                 className="page-link border-t border-[var(--line)] pt-3"
               >
                 <strong className="block font-mono text-[1.35rem] leading-none font-medium tracking-[-0.04em] tabular-nums text-[var(--ink)] sm:text-[1.8rem]">
-                  <CountUp to={2} />
+                  <CountUp to={playStoreProjects.length} />
                 </strong>
                 <span className="mt-1.5 block text-[12px] leading-4 font-medium text-[var(--ink-soft)] sm:text-[13px]">
                   Google Play apps
                 </span>
                 <span className="mt-1 hidden text-[12px] leading-5 text-[var(--ink-faint)] sm:block">
-                  Bytewise and Nen
+                  {playStoreProjectSummary}
                 </span>
               </a>
             </div>

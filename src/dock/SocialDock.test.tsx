@@ -7,7 +7,7 @@ import { ThemeContext } from "./useTheme";
 
 afterEach(() => vi.restoreAllMocks());
 
-function renderDock(canMagnify = false) {
+function renderDock(canMagnify = false, homeHref?: string) {
   vi.spyOn(window, "matchMedia").mockImplementation(
     (query) =>
       ({
@@ -26,7 +26,7 @@ function renderDock(canMagnify = false) {
       <SoundContext.Provider
         value={{ soundEnabled: true, toggleSound: vi.fn(), playDockTick }}
       >
-        <SocialDock />
+        <SocialDock homeHref={homeHref} />
       </SoundContext.Provider>
     </ThemeContext.Provider>,
   );
@@ -61,5 +61,13 @@ describe("SocialDock audio interactions", () => {
     await user.keyboard("{Enter}");
     expect(playDockTick).toHaveBeenCalledOnce();
     expect(toggleTheme).toHaveBeenCalledOnce();
+  });
+
+  it("supports an explicit homeHref for secondary routes", () => {
+    renderDock(false, "/");
+    expect(screen.getByRole("link", { name: "Home" })).toHaveAttribute(
+      "href",
+      "/",
+    );
   });
 });

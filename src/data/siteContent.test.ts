@@ -4,7 +4,10 @@ import {
   alsoProjects,
   caseStudies,
   featuredProjects,
+  playStoreProjectSummary,
+  playStoreProjects,
   productSpotlights,
+  profile,
   projects,
   speechRelayMetrics,
 } from "./siteContent";
@@ -59,6 +62,23 @@ describe("projects metadata", () => {
     for (const project of alsoProjects) {
       expect(project.alsoLine).toBeTruthy();
       expect(project.noteId).toBeUndefined();
+    }
+  });
+
+  it("derives Play Store apps and card presentation flags from siteContent", () => {
+    expect(playStoreProjects.map((project) => project.slug)).toEqual([
+      "bytewise",
+      "nen",
+    ]);
+    expect(playStoreProjectSummary).toBe("Bytewise and Nen");
+
+    const os = projects.find((project) => project.slug === "02-os");
+    expect(os?.logoWell).toBe("white");
+    expect(os?.showTags).toBe(true);
+
+    expect(profile.tagline).toBeTruthy();
+    for (const language of profile.strapline.split(" · ")) {
+      expect(profile.knowsAbout).toContain(language);
     }
   });
 });

@@ -126,7 +126,7 @@ export default function OpenGraphImage() {
                 color: "#b7b5ae",
               }}
             >
-              Building useful software, from model to product.
+              {profile.tagline}
             </span>
           </div>
 

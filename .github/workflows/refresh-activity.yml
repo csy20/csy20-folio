@@ -2,22 +2,29 @@ name: Refresh activity
 
 on:
   schedule:
-    # 18:30 UTC is 00:00 IST, after the India day has closed.
-    - cron: "30 18 * * *"
+    # Off-peak 4-hourly schedule avoids :00/:30 queue spikes and captures
+    # same-day contributions plus the 00:00 IST (18:30 UTC) day rollover.
+    - cron: "43 */4 * * *"
   workflow_dispatch:
 
 permissions:
   contents: write
 
+concurrency:
+  group: refresh-activity
+  cancel-in-progress: false
+
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Kolkata
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Update the activity snapshot
+      - name: Update the activity and contribution snapshots
         env:
           GH_TOKEN: ${{ secrets.ACTIVITY_TOKEN }}
         run: |
@@ -26,14 +33,16 @@ jobs:
             exit 1
           fi
           node scripts/update-activity.mjs
-      - name: Commit the snapshot when the calendar changes
+          node scripts/update-contributions.mjs --discover
+      - name: Commit the snapshots when data changes
         run: |
-          if git diff --quiet -- src/data/activity.generated.json; then
-            echo "Activity calendar is unchanged."
+          if git diff --quiet -- src/data/activity.generated.json src/data/contributions.generated.json; then
+            echo "Activity calendar and contribution snapshots are unchanged."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/data/activity.generated.json
-          git commit -m "Refresh GitHub activity calendar."
+          git add src/data/activity.generated.json src/data/contributions.generated.json
+          git commit -m "Refresh GitHub activity and contribution snapshots."
+          git pull --rebase origin "${GITHUB_REF_NAME:-main}"
           git push

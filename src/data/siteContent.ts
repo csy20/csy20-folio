@@ -29,6 +29,8 @@ export type Project = {
   tags: string[];
   links: ProjectLink[];
   logo?: string;
+  logoWell?: "default" | "white";
+  showTags?: boolean;
   spotlight?: string;
   releaseNote?: string;
 };
@@ -69,15 +71,30 @@ export const speechRelayMetrics = {
   vadComparison: { fixedWindowMs: 4708, vadMs: 3597, reductionPercent: 23.6 },
 } as const;
 
+const strapline = "Python · Rust · TypeScript";
+
 export const profile = {
   name: "Chitresh Yadav",
   handle: "csy20",
   role: "Backend · Applied ML",
-  strapline: "Python · Rust · TypeScript",
+  strapline,
+  tagline: "Building useful software, from model to product.",
   heroDescription:
     "I build backend systems and turn machine learning into working products. From realtime speech to local agents, I care about what ships — and how well it runs.",
   availability: "Open to SDE-1 / Backend / Applied ML roles.",
+  knowsAbout: [
+    ...strapline.split(" · "),
+    "Backend Systems",
+    "Applied Machine Learning",
+    "Dart",
+    "Flutter",
+    "WebRTC",
+    "ONNX",
+    "Model Context Protocol",
+  ],
 };
+
+export const notesLastModified = "2026-11-10T00:22:38+05:30";
 
 export const portraits: Record<PortraitId, Portrait> = {
   twitter: {
@@ -132,6 +149,8 @@ export const projects: Project[] = [
     noteId: "02-os",
     tags: ["Rust", "GNOME", "MCP", "Linux"],
     logo: "/02-logo.png",
+    logoWell: "white",
+    showTags: true,
     spotlight: "Public alpha",
     releaseNote:
       "v2026.10.01 live image. Local-first — no account and no required model API.",
@@ -292,6 +311,15 @@ export const featuredProjects: readonly Project[] = projects.filter(
 export const alsoProjects: readonly Project[] = projects.filter(
   (project) => project.placement === "also",
 );
+
+export const playStoreProjects: readonly Project[] = projects.filter((project) =>
+  project.links.some((link) => link.href.startsWith("https://play.google.com/")),
+);
+
+export const playStoreProjectSummary = new Intl.ListFormat("en", {
+  style: "long",
+  type: "conjunction",
+}).format(playStoreProjects.map((project) => project.title));
 
 export const socialLinks: SocialLink[] = [
   {

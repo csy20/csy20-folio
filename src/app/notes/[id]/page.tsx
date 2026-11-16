@@ -2,12 +2,15 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { config } from "@/config";
 import {
   ENGINEERING_NOTE_IDS,
   getAdjacentNotes,
+  profile,
   resolveNote,
   resumeUrl,
   type EngineeringNoteId,
+  type ResolvedNote,
 } from "@/data/siteContent";
 import { SocialDock } from "@/dock/SocialDock";
 import { IndiaClock } from "@/site/IndiaClock";
@@ -15,6 +18,12 @@ import { PipelineSchematic } from "@/site/PipelineSchematic";
 
 function isEngineeringNoteId(value: string): value is EngineeringNoteId {
   return (ENGINEERING_NOTE_IDS as readonly string[]).includes(value);
+}
+
+function describeNote(resolved: ResolvedNote): string {
+  return resolved.kind === "case-study"
+    ? `${resolved.study.decision} ${resolved.study.outcome}`
+    : resolved.spotlight.overview;
 }
 
 export function generateStaticParams() {
@@ -30,11 +39,8 @@ export async function generateMetadata({
   if (!isEngineeringNoteId(id)) return {};
 
   const resolved = resolveNote(id);
-  const title = `${resolved.project.title} — Engineering Notes · Chitresh Yadav`;
-  const description =
-    resolved.kind === "case-study"
-      ? `${resolved.study.decision} ${resolved.study.outcome}`
-      : resolved.spotlight.overview;
+  const title = `${resolved.project.title} — Engineering Notes · ${profile.name}`;
+  const description = describeNote(resolved);
 
   return {
     title,
@@ -43,7 +49,7 @@ export async function generateMetadata({
     openGraph: {
       type: "article",
       url: `/notes/${id}`,
-      siteName: "csy20",
+      siteName: profile.handle,
       title,
       description,
     },
@@ -67,9 +73,70 @@ export default async function EngineeringNotePage({
 
   const resolved = resolveNote(id);
   const adjacent = getAdjacentNotes(id);
+  const noteUrl = `${config.siteUrl}/notes/${id}`;
+  const description = describeNote(resolved);
+
+  const articleJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    headline: `${resolved.project.title} — ${
+      resolved.kind === "case-study"
+        ? resolved.study.category
+        : resolved.project.eyebrow
+    }`,
+    name: resolved.project.title,
+    description,
+    url: noteUrl,
+    mainEntityOfPage: noteUrl,
+    image: `${noteUrl}/opengraph-image`,
+    keywords: resolved.project.tags,
+    author: {
+      "@type": "Person",
+      "@id": `${config.siteUrl}/#person`,
+      name: profile.name,
+      url: config.siteUrl,
+    },
+  };
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: config.siteUrl,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Selected work",
+        item: `${config.siteUrl}/#projects`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: resolved.project.title,
+        item: noteUrl,
+      },
+    ],
+  };
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(articleJsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
       <main
         id="main-content"
         tabIndex={-1}
@@ -104,7 +171,7 @@ export default async function EngineeringNotePage({
                 width={64}
                 height={64}
                 className={`work-logo h-12 w-12 shrink-0 rounded-[0.9rem] object-contain ${
-                  resolved.project.slug === "02-os"
+                  resolved.project.logoWell === "white"
                     ? "bg-white"
                     : "bg-[var(--logo-well)]"
                 }`}
@@ -254,7 +321,7 @@ export default async function EngineeringNotePage({
           </nav>
         </article>
       </main>
-      <SocialDock />
+      <SocialDock homeHref="/" />
     </>
   );
 }
