@@ -1,13 +1,24 @@
 {
-  "generatedAt": "2026-11-10T13:00:02.358Z",
+  "generatedAt": "2026-11-17T03:09:23.465Z",
   "author": "csy20",
   "query": "is:pr author:csy20 -user:csy20",
   "sourceUrl": "https://api.github.com/search/issues?q=is%3Apr%20author%3Acsy20%20-user%3Acsy20&per_page=100&sort=updated&order=desc",
   "sourceHref": "https://github.com/pulls?q=is%3Apr%20author%3Acsy20%20-user%3Acsy20",
   "coverage": "Public upstream pull requests and Gerrit changes authored by csy20, excluding repositories owned by csy20. Curated technical evidence is filtered separately.",
   "complete": true,
-  "total": 26,
+  "total": 32,
   "records": [
+    {
+      "repository": "dart-lang/sdk",
+      "number": 570160,
+      "title": "[analysis_server] Keep declaring final and var",
+      "url": "https://dart-review.googlesource.com/c/sdk/+/570160",
+      "state": "closed",
+      "createdAt": "2026-10-27T15:54:43Z",
+      "updatedAt": "2026-11-09T23:14:58Z",
+      "closedAt": "2026-11-09T23:14:58Z",
+      "mergedAt": "2026-11-09T23:14:58Z"
+    },
     {
       "repository": "dart-lang/sdk",
       "number": 575740,
@@ -42,6 +53,61 @@
       "mergedAt": "2026-11-06T10:46:29Z"
     },
     {
+      "repository": "redhat-et/ripwire",
+      "number": 495,
+      "title": "zig: measure both tree-sitter-zig pins (#166)",
+      "url": "https://github.com/redhat-et/ripwire/pull/495",
+      "state": "open",
+      "createdAt": "2026-11-01T20:34:59Z",
+      "updatedAt": "2026-11-01T22:17:46Z",
+      "closedAt": null,
+      "mergedAt": null
+    },
+    {
+      "repository": "gyroflow/gyroflow",
+      "number": 1228,
+      "title": "Optical residual mesh pass for no-gyro / optical-only stabilization",
+      "url": "https://github.com/gyroflow/gyroflow/pull/1228",
+      "state": "closed",
+      "createdAt": "2026-09-16T13:35:48Z",
+      "updatedAt": "2026-10-31T22:53:10Z",
+      "closedAt": "2026-10-31T22:53:10Z",
+      "mergedAt": null
+    },
+    {
+      "repository": "gvisor/gvisor",
+      "number": 15325,
+      "title": "tcp: handle receive-buffer exhaustion with small segments",
+      "url": "https://github.com/gvisor/gvisor/pull/15325",
+      "state": "open",
+      "createdAt": "2026-10-05T21:55:19Z",
+      "updatedAt": "2026-10-29T13:50:11Z",
+      "closedAt": null,
+      "mergedAt": null
+    },
+    {
+      "repository": "NVIDIA/aicr",
+      "number": 3342,
+      "title": "feat: add --require-evidence for recipe resolution",
+      "url": "https://github.com/NVIDIA/aicr/pull/3342",
+      "state": "closed",
+      "createdAt": "2026-10-20T18:12:55Z",
+      "updatedAt": "2026-10-21T22:14:10Z",
+      "closedAt": "2026-10-21T22:14:10Z",
+      "mergedAt": "2026-10-21T22:14:10Z"
+    },
+    {
+      "repository": "semantica-agi/semantica",
+      "number": 1923,
+      "title": "fix(vector-store): sync the facade mirror only for confirmed updates",
+      "url": "https://github.com/semantica-agi/semantica/pull/1923",
+      "state": "closed",
+      "createdAt": "2026-10-07T06:07:37Z",
+      "updatedAt": "2026-10-15T08:56:22Z",
+      "closedAt": "2026-10-15T08:56:11Z",
+      "mergedAt": "2026-10-15T08:56:11Z"
+    },
+    {
       "repository": "semantica-agi/semantica",
       "number": 1922,
       "title": "fix(vector-store): serialize backend mutations and mirror publication",
@@ -51,17 +117,6 @@
       "updatedAt": "2026-10-12T15:01:22Z",
       "closedAt": "2026-10-12T15:01:16Z",
       "mergedAt": "2026-10-12T15:01:16Z"
-    },
-    {
-      "repository": "semantica-agi/semantica",
-      "number": 1923,
-      "title": "fix(vector-store): sync the facade mirror only for confirmed updates",
-      "url": "https://github.com/semantica-agi/semantica/pull/1923",
-      "state": "open",
-      "createdAt": "2026-10-07T06:07:37Z",
-      "updatedAt": "2026-10-10T04:06:10Z",
-      "closedAt": null,
-      "mergedAt": null
     },
     {
       "repository": "semantica-agi/semantica",
@@ -83,6 +138,17 @@
       "createdAt": "2026-10-05T21:55:19Z",
       "updatedAt": "2026-10-05T22:30:52Z",
       "closedAt": null,
+      "mergedAt": null
+    },
+    {
+      "repository": "dart-lang/sdk",
+      "number": 64457,
+      "title": "[analysis_server] Track resource provider I/O timings since startup",
+      "url": "https://github.com/dart-lang/sdk/pull/64457",
+      "state": "closed",
+      "createdAt": "2026-10-01T21:39:25Z",
+      "updatedAt": "2026-10-05T20:35:39Z",
+      "closedAt": "2026-10-05T20:35:39Z",
       "mergedAt": null
     },
     {
@@ -117,17 +183,6 @@
       "updatedAt": "2026-10-02T16:08:49Z",
       "closedAt": "2026-10-02T16:08:49Z",
       "mergedAt": "2026-10-02T16:08:49Z"
-    },
-    {
-      "repository": "gyroflow/gyroflow",
-      "number": 1228,
-      "title": "Optical residual mesh pass for no-gyro / optical-only stabilization",
-      "url": "https://github.com/gyroflow/gyroflow/pull/1228",
-      "state": "open",
-      "createdAt": "2026-09-16T13:35:48Z",
-      "updatedAt": "2026-09-28T12:46:52Z",
-      "closedAt": null,
-      "mergedAt": null
     },
     {
       "repository": "semantica-agi/semantica",
@@ -222,6 +277,17 @@
       "number": 74,
       "title": "docs: say cache hit rates are independent per hop",
       "url": "https://github.com/xevrion/breakscale/pull/74",
+      "state": "closed",
+      "createdAt": "2026-09-12T21:29:03Z",
+      "updatedAt": "2026-09-14T05:01:19Z",
+      "closedAt": "2026-09-14T05:01:19Z",
+      "mergedAt": "2026-09-14T05:01:19Z"
+    },
+    {
+      "repository": "workersio/breakscale",
+      "number": 74,
+      "title": "docs: say cache hit rates are independent per hop",
+      "url": "https://github.com/workersio/breakscale/pull/74",
       "state": "closed",
       "createdAt": "2026-09-12T21:29:03Z",
       "updatedAt": "2026-09-14T05:01:19Z",
