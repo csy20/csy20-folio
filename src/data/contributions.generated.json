@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-18T17:32:03.184Z",
+  "generatedAt": "2026-11-19T13:52:34.991Z",
   "author": "csy20",
   "query": "is:pr author:csy20 -user:csy20",
   "sourceUrl": "https://api.github.com/search/issues?q=is%3Apr%20author%3Acsy20%20-user%3Acsy20&per_page=100&sort=updated&order=desc",
@@ -15,7 +15,7 @@
       "url": "https://github.com/internetarchive/openlibrary/pull/14569",
       "state": "open",
       "createdAt": "2026-11-18T17:04:44Z",
-      "updatedAt": "2026-11-18T17:23:12Z",
+      "updatedAt": "2026-11-19T08:33:19Z",
       "closedAt": null,
       "mergedAt": null
     },
