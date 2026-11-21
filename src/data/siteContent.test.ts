@@ -75,6 +75,7 @@ describe("projects metadata", () => {
     const os = projects.find((project) => project.slug === "02-os");
     expect(os?.logoWell).toBe("white");
     expect(os?.showTags).toBe(true);
+    expect(os?.links).toEqual([{ label: "Website", href: "https://02os.xyz" }]);
 
     expect(profile.tagline).toBeTruthy();
     for (const language of profile.strapline.split(" · ")) {

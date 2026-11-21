@@ -379,7 +379,123 @@ details[open] > .show-all-panel {
   transition: transform 1s linear;
 }
 
+.network-avatar {
+  transition: transform 150ms cubic-bezier(0.22, 1, 0.36, 1);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.network-avatar-well {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 16%, transparent);
+}
+
+.network-avatar:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.network-avatar:focus-visible {
+  z-index: 10;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.network-avatar:active {
+  transform: scale(0.95);
+}
+
+.network-tooltip {
+  pointer-events: none;
+  position: absolute;
+  bottom: calc(100% + 10px);
+  z-index: 20;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  white-space: nowrap;
+  border-radius: 7px;
+  background: var(--ink);
+  color: var(--page-bg);
+  padding: 5px 8px;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px;
+  line-height: 1.2;
+  box-shadow: 0 8px 20px -10px rgba(0, 0, 0, 0.45);
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(3px) scale(0.97);
+  transition:
+    opacity 110ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 110ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 110ms;
+}
+
+.network-tooltip-meta {
+  opacity: 0.68;
+  font-size: 10.5px;
+}
+
+.network-tooltip-start {
+  left: 0;
+  transform-origin: bottom left;
+}
+
+.network-tooltip-center {
+  left: 50%;
+  transform-origin: bottom center;
+  transform: translateX(-50%) translateY(3px) scale(0.97);
+}
+
+.network-tooltip-end {
+  right: 0;
+  transform-origin: bottom right;
+}
+
+.network-stack:not(.is-dismissed) .network-avatar:focus-visible .network-tooltip {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.network-stack:not(.is-dismissed)
+  .network-avatar:focus-visible
+  .network-tooltip-center {
+  transform: translateX(-50%) translateY(0) scale(1);
+}
+
+@media (any-hover: hover) {
+  .network-avatar:hover {
+    z-index: 10;
+    transform: translateY(-3px) scale(1.06);
+  }
+
+  .network-avatar:hover:active {
+    transform: translateY(-1px) scale(0.98);
+  }
+
+  .network-stack:not(.is-dismissed) .network-avatar:hover .network-tooltip {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    transition-delay: 50ms;
+    transition-duration: 150ms;
+  }
+
+  .network-stack:not(.is-dismissed)
+    .network-avatar:hover
+    .network-tooltip-center {
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .clock-colon { animation: none !important; }
   .clock-second { transition: none !important; }
+  .network-avatar,
+  .network-tooltip {
+    transition: none !important;
+  }
+  .network-avatar:hover,
+  .network-avatar:active {
+    transform: none !important;
+  }
 }

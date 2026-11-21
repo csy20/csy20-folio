@@ -156,12 +156,8 @@ export const projects: Project[] = [
       "v2026.10.01 live image. Local-first — no account and no required model API.",
     links: [
       {
-        label: "GitHub",
-        href: "https://github.com/csy20/02_OS",
-      },
-      {
-        label: "Release",
-        href: "https://github.com/csy20/02_OS/releases/tag/v2026.10.01",
+        label: "Website",
+        href: "https://02os.xyz",
       },
     ],
   },

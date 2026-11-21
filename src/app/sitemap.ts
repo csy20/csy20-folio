@@ -20,6 +20,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "daily",
       priority: 1,
     },
+    {
+      url: `${config.siteUrl}/ring`,
+      lastModified: notesDate,
+      changeFrequency: "monthly",
+      priority: 0.6,
+    },
     ...ENGINEERING_NOTE_IDS.map((id) => ({
       url: `${config.siteUrl}/notes/${id}`,
       lastModified: notesDate,

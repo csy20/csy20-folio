@@ -32,6 +32,7 @@ import {
 import { PipelineSchematic } from "./PipelineSchematic";
 import { ScrollProgress } from "./ScrollProgress";
 import { SectionNav } from "./SectionNav";
+import { SiteNetwork } from "./SiteNetwork";
 
 function ExternalLink({
   href,
@@ -473,14 +474,26 @@ export function ClientApp() {
               </li>
             ))}
           </ul>
-          <footer className="mt-16 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[var(--line)] pt-6 text-[13px] text-[var(--ink-faint)]">
-            <a href="#hero" className="page-link text-[var(--ink)]">
-              Chitresh Yadav{" "}
-              <span className="text-[var(--ink-faint)]">/ csy20</span>
-            </a>
-            <span>Built with care. Kept in the open.</span>
-            <FooterClientControls />
-            <span className="sm:ml-auto">© {contributionSnapshotYear}</span>
+          <footer className="mt-16 flex flex-col gap-4 border-t border-[var(--line)] pt-6 text-[13px] text-[var(--ink-faint)]">
+            <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-1.5">
+              <a href="#hero" className="page-link text-[var(--ink)]">
+                Chitresh Yadav{" "}
+                <span className="text-[var(--ink-faint)]">/ csy20</span>
+              </a>
+              <span className="order-3 w-full text-[12.5px] sm:order-2 sm:w-auto sm:text-[13px]">
+                Built with care. Kept in the open.
+              </span>
+              <span className="order-2 font-mono text-[12px] tabular-nums sm:order-3 sm:ml-auto">
+                © {contributionSnapshotYear}
+              </span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+              <SiteNetwork currentSiteId="csy20" />
+              <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+                <FooterClientControls />
+              </div>
+            </div>
           </footer>
         </section>
       </main>

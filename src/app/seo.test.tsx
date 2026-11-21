@@ -9,7 +9,7 @@ import sitemap from "./sitemap";
 describe("SEO metadata and structured data", () => {
   it("populates deterministic lastModified dates in sitemap.xml", () => {
     const entries = sitemap();
-    expect(entries).toHaveLength(1 + ENGINEERING_NOTE_IDS.length);
+    expect(entries).toHaveLength(2 + ENGINEERING_NOTE_IDS.length);
 
     for (const entry of entries) {
       expect(entry.lastModified).toBeInstanceOf(Date);
@@ -17,6 +17,7 @@ describe("SEO metadata and structured data", () => {
     }
 
     expect(entries[0]?.url).toBe(config.siteUrl);
+    expect(entries[1]?.url).toBe(`${config.siteUrl}/ring`);
   });
 
   it("emits TechArticle and BreadcrumbList JSON-LD on engineering note pages", async () => {
