@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-19T13:52:34.991Z",
+  "generatedAt": "2026-11-22T07:26:47.309Z",
   "author": "csy20",
   "query": "is:pr author:csy20 -user:csy20",
   "sourceUrl": "https://api.github.com/search/issues?q=is%3Apr%20author%3Acsy20%20-user%3Acsy20&per_page=100&sort=updated&order=desc",
@@ -8,6 +8,17 @@
   "complete": true,
   "total": 33,
   "records": [
+    {
+      "repository": "topoteretes/cognee",
+      "number": 4989,
+      "title": "fix(api): map skill ingest failures to 400/500 instead of 409",
+      "url": "https://github.com/topoteretes/cognee/pull/4989",
+      "state": "open",
+      "createdAt": "2026-09-08T22:35:28Z",
+      "updatedAt": "2026-11-22T00:12:23Z",
+      "closedAt": null,
+      "mergedAt": null
+    },
     {
       "repository": "internetarchive/openlibrary",
       "number": 14569,
@@ -216,17 +227,6 @@
       "updatedAt": "2026-09-23T04:58:36Z",
       "closedAt": "2026-09-23T04:58:36Z",
       "mergedAt": "2026-09-23T04:58:36Z"
-    },
-    {
-      "repository": "topoteretes/cognee",
-      "number": 4989,
-      "title": "fix(api): map skill ingest failures to 400/500 instead of 409",
-      "url": "https://github.com/topoteretes/cognee/pull/4989",
-      "state": "open",
-      "createdAt": "2026-09-08T22:35:28Z",
-      "updatedAt": "2026-09-21T23:00:32Z",
-      "closedAt": null,
-      "mergedAt": null
     },
     {
       "repository": "semantica-agi/semantica",
