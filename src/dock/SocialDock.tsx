@@ -40,9 +40,14 @@ function useDockMagnification() {
 
 export function SocialDock({ homeHref = "#hero" }: { homeHref?: string } = {}) {
   const { theme, toggleTheme } = useTheme();
-  const { playDockTick } = useSound();
+  const { playDockTick, playTone } = useSound();
   const canMagnify = useDockMagnification();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
+  const playDockCue = (index: number) => {
+    if (playTone) playTone({ kind: "dock", index });
+    else playDockTick();
+  };
 
   const controlMotion = (index: number) => {
     const distance =
@@ -65,7 +70,7 @@ export function SocialDock({ homeHref = "#hero" }: { homeHref?: string } = {}) {
       onPointerEnter: (event: PointerEvent<HTMLElement>) => {
         if (event.pointerType === "touch") return;
         if (canMagnify) setHoveredIndex(index);
-        playDockTick();
+        playDockCue(index);
       },
     };
   };
@@ -87,7 +92,7 @@ export function SocialDock({ homeHref = "#hero" }: { homeHref?: string } = {}) {
         href={homeHref}
         aria-label="Home"
         {...controlMotion(0)}
-        onClick={playDockTick}
+        onClick={() => playDockCue(0)}
       >
         {icon(<Icon name="home" size={20} />)}
         <span className="dock-tooltip" aria-hidden="true">
@@ -105,7 +110,7 @@ export function SocialDock({ homeHref = "#hero" }: { homeHref?: string } = {}) {
             rel={external ? "noopener noreferrer" : undefined}
             aria-label={`${link.label}${external ? " (opens in a new tab)" : ""}`}
             {...controlMotion(index + 1)}
-            onClick={playDockTick}
+            onClick={() => playDockCue(index + 1)}
           >
             {icon(<Icon name={link.icon} size={20} />)}
             <span className="dock-tooltip" aria-hidden="true">
@@ -124,7 +129,9 @@ export function SocialDock({ homeHref = "#hero" }: { homeHref?: string } = {}) {
         aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
         {...controlMotion(dockLinks.length + 1)}
         onClick={(event) => {
-          playDockTick();
+          const nextTheme = theme === "dark" ? "light" : "dark";
+          if (playTone) playTone({ kind: "theme", next: nextTheme });
+          else playDockTick();
           const rect = event.currentTarget.getBoundingClientRect();
           const origin =
             rect.width > 0 && rect.height > 0

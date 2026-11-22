@@ -128,7 +128,7 @@ export const projects: Project[] = [
     logo: "/logos/speech-relay.svg",
     spotlight: `${speechRelayMetrics.profile.meanMs} ms mean E2E`,
     releaseNote:
-      "Silero-VAD replaced fixed-window flushing. Benchmark context and results are linked in the engineering notes.",
+      "Silero-VAD replaced fixed-window flushing. Profile and VAD figures are detailed in the engineering notes.",
     links: [
       {
         label: "GitHub",
@@ -182,6 +182,10 @@ export const projects: Project[] = [
         label: "Play Store",
         href: "https://play.google.com/store/apps/details?id=com.csy20.bytewise",
       },
+      {
+        label: "Website",
+        href: "https://bytewise.lol",
+      },
     ],
   },
   {
@@ -204,6 +208,10 @@ export const projects: Project[] = [
       {
         label: "Play Store",
         href: "https://play.google.com/store/apps/details?id=dev.csy20.nen",
+      },
+      {
+        label: "Website",
+        href: "https://trynen.xyz",
       },
       {
         label: "GitHub",
@@ -364,6 +372,22 @@ export const socialLinks: SocialLink[] = [
 
 export const resumeUrl = config.resumeUrl;
 
+export type NoteSpec = {
+  label: string;
+  value: string;
+};
+
+export type NoteTradeoff = {
+  title: string;
+  detail: string;
+};
+
+export type NoteDeepDive = {
+  specs: NoteSpec[];
+  flow: string[];
+  tradeoffs: NoteTradeoff[];
+};
+
 export type CaseStudy = {
   title: string;
   id: EngineeringNoteId;
@@ -372,6 +396,7 @@ export type CaseStudy = {
   decision: string;
   outcome: string;
   detail: string;
+  deepDive: NoteDeepDive;
 };
 
 export const caseStudies: CaseStudy[] = [
@@ -387,6 +412,39 @@ export const caseStudies: CaseStudy[] = [
       `${speechRelayMetrics.vadComparison.reductionPercent}% lower mean latency in the separate VAD comparison: ${speechRelayMetrics.vadComparison.fixedWindowMs.toLocaleString("en-US")} ms fixed-window → ${speechRelayMetrics.vadComparison.vadMs.toLocaleString("en-US")} ms VAD.`,
     detail:
       "The full-pipeline CPU profile measured 2,505 ms mean and 2,580 ms p50 across 11 utterances using faster-whisper tiny/int8, OPUS-MT, and edge-tts. These profile measurements are separate from the VAD comparison. A shared ASR stream fans out to multiple listeners; WER/CER evaluation tracks recognition quality alongside timing.",
+    deepDive: {
+      specs: [
+        { label: "CPU profile", value: `${speechRelayMetrics.profile.meanMs} ms mean · ${speechRelayMetrics.profile.p50Ms} ms p50` },
+        { label: "VAD A/B cut", value: `-${speechRelayMetrics.vadComparison.reductionPercent}% (${speechRelayMetrics.vadComparison.fixedWindowMs} → ${speechRelayMetrics.vadComparison.vadMs} ms)` },
+        { label: "ASR / MT / TTS", value: "faster-whisper tiny/int8 · OPUS-MT · edge-tts" },
+        { label: "Quality eval", value: "WER / CER harness alongside timing" },
+      ],
+      flow: [
+        "16 kHz mic stream",
+        "Silero-VAD utterance gate",
+        "Shared ASR fan-out",
+        "EN → HI translation",
+        "Streaming TTS",
+        "WebRTC audio out",
+      ],
+      tradeoffs: [
+        {
+          title: "Speech-driven boundaries over fixed windows",
+          detail:
+            "Fixed-window flushing either waits needlessly after a finished phrase or slices mid-word. Triggering flushes on Silero-VAD silence cut mean wait by 1,111 ms in the A/B run.",
+        },
+        {
+          title: "Single shared ASR stream with listener fan-out",
+          detail:
+            "Running Whisper once per room instead of once per listener keeps CPU load flat as listeners join, isolating translation/synthesis fan-out downstream.",
+        },
+        {
+          title: "Kept profile and VAD runs strictly separate",
+          detail:
+            "The 2,505 ms CPU profile and the 23.6% VAD reduction come from different benchmark configurations, so both are reported independently rather than blended.",
+        },
+      ],
+    },
   },
   {
     title: "02_OS",
@@ -400,6 +458,39 @@ export const caseStudies: CaseStudy[] = [
       "Public alpha · v2026.10.01 live image. No account or required model API.",
     detail:
       "The desktop bundles the runtime with a public live image. Symbol extraction and git-aware staleness feed an MCP interface for coding agents. This is an early, publicly downloadable alpha; the release and source are the evidence of its current status.",
+    deepDive: {
+      specs: [
+        { label: "Runtime workspace", value: "11 Rust crates (daemon, CLI, MCP, desktop)" },
+        { label: "Parser coverage", value: "8 Tree-sitter grammars (Rust, Py, C/C++, TS, Go, Dart, Bash)" },
+        { label: "MCP surface", value: "~40 tools · SQLite + FTS5 evidence graph" },
+        { label: "Transport", value: "Local Unix socket ($XDG_RUNTIME_DIR/02agent.sock)" },
+      ],
+      flow: [
+        "git diff + file watcher",
+        "agent-parser (Tree-sitter)",
+        "agent-index (SQLite + FTS5)",
+        "agent-memory (staleness check)",
+        "agent-context (token budget)",
+        "agent-mcp (JSON-RPC stdio)",
+      ],
+      tradeoffs: [
+        {
+          title: "Git-diff staleness gate before serving cached facts",
+          detail:
+            "Static embeddings silently lie after a local edit. Checking every context item against the working tree diff forces incremental re-parsing of dirty files before an agent acts on them.",
+        },
+        {
+          title: "Budgeted graph packages over raw file dumps",
+          detail:
+            "Ranking symbols, callers, and tests inside a strict token budget lets local or smaller models reason cleanly without overflowing context windows.",
+        },
+        {
+          title: "Single-DE GNOME stack with precompiled schemas",
+          detail:
+            "Pruning conflicting portals and precompiling GLib/dconf schemas at ISO build time keeps the live image lean and bootable without cloud setup.",
+        },
+      ],
+    },
   },
   {
     title: "Bytewise",
@@ -412,6 +503,33 @@ export const caseStudies: CaseStudy[] = [
     outcome: "Live on Google Play · a signed, installable product.",
     detail:
       "Built with Flutter and Dart, using Riverpod and Drift / SQLite for an offline-first lesson library. The work includes product delivery, release signing, and the published store listing. The lesson count describes content, not users or downloads.",
+    deepDive: {
+      specs: [
+        { label: "Content library", value: "788+ DSA & system-design lessons" },
+        { label: "Persistence", value: "In-memory hot cache + Drift / SQLite" },
+        { label: "State layer", value: "Flutter · Dart · Riverpod" },
+        { label: "Distribution", value: "Signed AAB · Google Play production" },
+      ],
+      flow: [
+        "Structured lesson corpus",
+        "Drift / SQLite local store",
+        "In-memory read cache",
+        "Riverpod state providers",
+        "Offline reader UI",
+      ],
+      tradeoffs: [
+        {
+          title: "Two-tier memory + SQLite cache",
+          detail:
+            "Reading lessons from memory on repeat visits while keeping Drift/SQLite as durable backing removes loading spinners completely on flaky mobile networks.",
+        },
+        {
+          title: "Full release pipeline over local demo",
+          detail:
+            "Owning keystore signing, Play Console compliance, store assets, and the companion web privacy/landing page closes the loop from code to installable software.",
+        },
+      ],
+    },
   },
 ];
 
@@ -421,6 +539,7 @@ export type ProductSpotlight = {
   coverLine: string;
   overview: string;
   features: string[];
+  deepDive: NoteDeepDive;
 };
 
 export const productSpotlights: ProductSpotlight[] = [
@@ -435,6 +554,38 @@ export const productSpotlights: ProductSpotlight[] = [
       "No ads or account",
       "Lock-screen controls",
     ],
+    deepDive: {
+      specs: [
+        { label: "Audio engine", value: "just_audio / ExoPlayer (MP3, FLAC, WAV, OGG, AAC)" },
+        { label: "Library index", value: "Native Android MediaStore plugin (Kotlin)" },
+        { label: "Meter pipeline", value: "Downsampled track envelope (no mic / no Visualizer JNI)" },
+        { label: "Distribution", value: "Google Play · MIT licensed" },
+      ],
+      flow: [
+        "LibraryMediaStorePlugin",
+        "MusicRepository + SQLite playlists",
+        "PlaybackNotifier (Riverpod)",
+        "NenAudioHandler + ExoPlayer",
+        "PlaybackEnvelopePlugin → Meter",
+      ],
+      tradeoffs: [
+        {
+          title: "Track-envelope extraction over Android Visualizer JNI",
+          detail:
+            "Android's Visualizer API historically required RECORD_AUDIO permission and behaves inconsistently across OEM audio HALs. Computing a downsampled envelope directly from the local file keeps permissions minimal and visuals smooth.",
+        },
+        {
+          title: "ExoPlayer playingStream as single source of truth",
+          detail:
+            "Binding play/pause buttons and the visualizer directly to ExoPlayer's playing flag instead of MediaSession callbacks prevents UI desync with lock-screen controls.",
+        },
+        {
+          title: "Deferred AudioService bootstrap",
+          detail:
+            "Initializing the background lock-screen service after the first frame keeps cold-start latency snappy while preserving full media-notification controls.",
+        },
+      ],
+    },
   },
 ];
 

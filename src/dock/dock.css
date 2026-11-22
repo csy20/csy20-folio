@@ -56,7 +56,7 @@
   padding: 8px;
   background: transparent;
   border-radius: 8px;
-  font-family: var(--font-space-grotesk), "Space Grotesk", sans-serif;
+  font-family: var(--font-geist-sans), sans-serif;
   font-size: 12px;
   white-space: nowrap;
   color: var(--text-secondary);
@@ -87,7 +87,7 @@
     inset 0 1px 0 #ffffff08;
   width: min(432px, calc(100% - 24px));
   height: 64px;
-  font-family: var(--font-space-grotesk), "Space Grotesk", sans-serif;
+  font-family: var(--font-geist-sans), sans-serif;
   transition:
     opacity 0.2s cubic-bezier(0.22, 1, 0.36, 1),
     transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
@@ -138,7 +138,7 @@ html:has(.folio-dialog[open]) .dock-shell {
   border-radius: 5px;
   color: var(--bg-primary);
   background: var(--text-primary);
-  font-family: var(--font-space-grotesk), "Space Grotesk", sans-serif;
+  font-family: var(--font-geist-sans), sans-serif;
   font-size: 12px;
   pointer-events: none;
   opacity: 0;

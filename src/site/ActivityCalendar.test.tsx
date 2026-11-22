@@ -37,7 +37,9 @@ describe("ActivityCalendar", () => {
         name: `${activityTotal} contributions in the last year`,
       }),
     ).toHaveAttribute("href", "https://github.com/csy20");
-    expect(screen.getByRole("img")).toHaveAccessibleName(/contributions in the last year/i);
+    expect(screen.getByRole("group")).toHaveAccessibleName(
+      /contributions in the last year/i,
+    );
     expect(screen.getByText("Each square is a day.")).toBeInTheDocument();
     expect(screen.getByText("Less")).toBeInTheDocument();
     expect(screen.getByText("More")).toBeInTheDocument();
@@ -45,7 +47,7 @@ describe("ActivityCalendar", () => {
     expect(screen.getByText("Wed")).toBeInTheDocument();
     expect(screen.getByText("Fri")).toBeInTheDocument();
     expect(
-      screen.getByText("Days on GitHub. The list below is the upstream pull requests."),
+      screen.getByText(/Outlined days mark upstream merges/i),
     ).toBeInTheDocument();
     expect(screen.queryByText(/contribution settings/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/learn how we count/i)).not.toBeInTheDocument();
@@ -66,18 +68,25 @@ describe("ActivityCalendar", () => {
     expect(screen.getByText(formatActivityCaption(day))).toBeInTheDocument();
     expect(screen.queryByText("Each square is a day.")).not.toBeInTheDocument();
 
-    fireEvent.mouseLeave(screen.getByRole("img"));
+    fireEvent.mouseLeave(screen.getByRole("group"));
     expect(screen.getByText("Each square is a day.")).toBeInTheDocument();
 
     fireEvent.pointerDown(cell);
     expect(screen.getByText(formatActivityCaption(day))).toBeInTheDocument();
   });
 
-  it("supports keyboard roving focus across days and surfaces active-day telemetry", () => {
+  it("supports keyboard roving focus across days and surfaces active-day, streak, and PR telemetry", () => {
     render(<ActivityCalendar />);
     expect(
-      screen.getByText(new RegExp(`${activityStats.activeDays} active days`)),
+      screen.getByText(
+        new RegExp(
+          `${activityStats.activeDays} active days · ${activityStats.longestStreakDays}d streak`,
+        ),
+      ),
     ).toBeInTheDocument();
+    expect(
+      document.querySelectorAll('[data-merged-pr="true"]').length,
+    ).toBeGreaterThan(0);
 
     const lastDay = activityDays.at(-1)!;
     const prevDay = activityDays.at(-2)!;
@@ -89,7 +98,7 @@ describe("ActivityCalendar", () => {
     fireEvent.focus(lastCell);
     expect(screen.getByText(formatActivityCaption(lastDay))).toBeInTheDocument();
 
-    fireEvent.keyDown(screen.getByRole("img"), { key: "ArrowUp" });
+    fireEvent.keyDown(screen.getByRole("group"), { key: "ArrowUp" });
     expect(screen.getByText(formatActivityCaption(prevDay))).toBeInTheDocument();
     expect(
       document.querySelector(`[data-date="${prevDay.date}"]`),

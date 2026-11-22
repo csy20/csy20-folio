@@ -2,9 +2,11 @@
 
 import {
   useCallback,
+  useContext,
   useEffect,
   useRef,
   useState,
+  type CSSProperties,
   type KeyboardEvent,
 } from "react";
 import { config } from "@/config";
@@ -20,6 +22,11 @@ import {
   weekColumns,
   type ActivityDay,
 } from "@/data/activity";
+import {
+  getContributionDomId,
+  mergedContributionsByDate,
+} from "@/data/contributions";
+import { SoundContext } from "@/dock/useSound";
 import { CountUp } from "@/site/CountUp";
 
 const cell = 10;
@@ -49,8 +56,21 @@ const defaultFocusDate = activityDays.at(-1)?.date ?? "";
 export function ActivityCalendar() {
   const scroller = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
+  const lastSoundAtRef = useRef(0);
+  const sound = useContext(SoundContext);
   const [active, setActive] = useState<ActivityDay | null>(null);
   const [fade, setFade] = useState({ left: false, right: false });
+
+  const playDayCue = useCallback(
+    (day: ActivityDay, merged: boolean) => {
+      if (!sound?.playTone) return;
+      const now = performance.now();
+      if (now - lastSoundAtRef.current < 38) return;
+      lastSoundAtRef.current = now;
+      sound.playTone({ kind: "calendar", level: day.level, merged });
+    },
+    [sound],
+  );
 
   const syncFade = useCallback(() => {
     const element = scroller.current;
@@ -96,6 +116,7 @@ export function ActivityCalendar() {
     if (!nextDay) return;
 
     setActive(nextDay);
+    playDayCue(nextDay, Boolean(mergedContributionsByDate.get(nextDay.date)?.length));
     const target = gridRef.current?.querySelector<HTMLElement>(
       `[data-date="${nextDay.date}"]`,
     );
@@ -150,7 +171,7 @@ export function ActivityCalendar() {
               </div>
               <div
                 ref={gridRef}
-                role="img"
+                role="group"
                 aria-label={summary}
                 className="grid gap-[2px]"
                 style={{
@@ -162,23 +183,50 @@ export function ActivityCalendar() {
                 onKeyDown={handleGridKeyDown}
               >
                 {columns.flatMap((slots, column) =>
-                  slots.map((day, row) =>
-                    day ? (
+                  slots.map((day, row) => {
+                    if (!day) return <span key={`empty-${column}-${row}`} />;
+                    const mergedOnDay = mergedContributionsByDate.get(day.date);
+                    const hasMergedPr = Boolean(mergedOnDay?.length);
+                    const prSummary = mergedOnDay
+                      ?.map((record) => `${record.repository}#${record.number}`)
+                      .join(", ");
+                    return (
                       <span
                         key={day.date}
                         data-date={day.date}
+                        data-merged-pr={hasMergedPr ? "true" : undefined}
                         tabIndex={day.date === focusedDate ? 0 : -1}
-                        aria-label={formatActivityCaption(day)}
-                        className={`rounded-[2px] outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--accent)] ${levelClass[day.level]}`}
-                        onMouseEnter={() => setActive(day)}
-                        onPointerEnter={() => setActive(day)}
+                        aria-label={
+                          prSummary
+                            ? `${formatActivityCaption(day)} — merged ${prSummary}`
+                            : formatActivityCaption(day)
+                        }
+                        className={`activity-cell rounded-[2px] outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--accent)] ${levelClass[day.level]} ${
+                          hasMergedPr
+                            ? "cursor-pointer ring-1 ring-[var(--pr)] ring-inset"
+                            : ""
+                        }`}
+                        style={{ "--col": column } as CSSProperties}
+                        onMouseEnter={() => {
+                          setActive(day);
+                          playDayCue(day, hasMergedPr);
+                        }}
+                        onPointerEnter={(event) => {
+                          setActive(day);
+                          if (event.pointerType !== "touch") {
+                            playDayCue(day, hasMergedPr);
+                          }
+                        }}
                         onPointerDown={() => setActive(day)}
                         onFocus={() => setActive(day)}
+                        onClick={() => {
+                          const firstPr = mergedOnDay?.[0];
+                          if (!firstPr) return;
+                          window.location.hash = `#${getContributionDomId(firstPr)}`;
+                        }}
                       />
-                    ) : (
-                      <span key={`empty-${column}-${row}`} />
-                    ),
-                  ),
+                    );
+                  }),
                 )}
               </div>
             </div>
@@ -193,14 +241,29 @@ export function ActivityCalendar() {
       </div>
 
       <div className="mt-3 flex items-start justify-between gap-4 text-[12px]">
-        <p className="min-h-5 text-[13px] leading-5 text-[var(--ink-soft)]">
+        <p
+          aria-live="polite"
+          className="min-h-5 text-[13px] leading-5 text-[var(--ink-soft)]"
+        >
           {active ? (
-            formatActivityCaption(active)
+            <>
+              {formatActivityCaption(active)}
+              {mergedContributionsByDate.get(active.date)?.length ? (
+                <span className="ml-1.5 font-mono text-[11.5px] text-[var(--pr)]">
+                  · merged{" "}
+                  {mergedContributionsByDate
+                    .get(active.date)!
+                    .map((record) => `${record.repository}#${record.number}`)
+                    .join(", ")}
+                </span>
+              ) : null}
+            </>
           ) : (
             <>
               <span>Each square is a day.</span>{" "}
               <span className="font-mono text-[11.5px] text-[var(--ink-faint)]">
-                · {activityStats.activeDays} active days · peak{" "}
+                · {activityStats.activeDays} active days ·{" "}
+                {activityStats.longestStreakDays}d streak · peak{" "}
                 {activityStats.maxDay.count}
               </span>
             </>
@@ -222,7 +285,8 @@ export function ActivityCalendar() {
         </div>
       </div>
       <p className="mt-3 text-[13px] leading-5 text-[var(--ink-faint)]">
-        Days on GitHub. The list below is the upstream pull requests.
+        Days on GitHub. Outlined days mark upstream merges; click one to jump
+        to the pull request below.
       </p>
     </figure>
   );

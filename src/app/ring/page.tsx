@@ -145,16 +145,29 @@ export default function RingPage() {
             })}
           </ol>
 
-          <div className="mt-10 rounded-xl border border-[var(--line)] bg-[var(--card)] p-4 font-mono text-[11.5px] leading-6 text-[var(--ink-faint)]">
-            <p className="text-[var(--ink-soft)]">Manifest</p>
-            <p className="mt-1 break-all">
-              <a
-                href="/ring.json"
-                className="page-link text-[var(--ink)] underline decoration-[var(--line)] underline-offset-4"
-              >
-                {config.siteUrl}/ring.json
-              </a>
-            </p>
+          <div className="mt-10 grid gap-4 rounded-xl border border-[var(--line)] bg-[var(--card)] p-4 font-mono text-[11.5px] leading-6 text-[var(--ink-faint)] sm:grid-cols-2">
+            <div>
+              <p className="text-[var(--ink-soft)]">Manifest</p>
+              <p className="mt-1 break-all">
+                <a
+                  href="/ring.json"
+                  className="page-link text-[var(--ink)] underline decoration-[var(--line)] underline-offset-4"
+                >
+                  {config.siteUrl}/ring.json
+                </a>
+              </p>
+            </div>
+            <div>
+              <p className="text-[var(--ink-soft)]">Agent summary</p>
+              <p className="mt-1 break-all">
+                <a
+                  href="/llms.txt"
+                  className="page-link text-[var(--ink)] underline decoration-[var(--line)] underline-offset-4"
+                >
+                  {config.siteUrl}/llms.txt
+                </a>
+              </p>
+            </div>
           </div>
         </section>
       </main>

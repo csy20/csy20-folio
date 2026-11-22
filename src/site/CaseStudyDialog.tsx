@@ -222,12 +222,12 @@ export function CaseStudyDialog({
               <span />
             )}
             <div className="flex flex-wrap items-center gap-3">
-              { noteId ? (
+              {noteId ? (
                 <a
                   href={`/notes/${noteId}`}
-                  className="page-link font-mono text-[12px] text-[var(--ink-soft)] underline-offset-4 hover:text-[var(--ink)] hover:underline"
+                  className="page-link font-mono text-[12px] text-[var(--accent)] underline-offset-4 hover:underline"
                 >
-                  Permalink
+                  Full deep-dive →
                 </a>
               ) : null}
               {resolved.project.links.map((link) => (

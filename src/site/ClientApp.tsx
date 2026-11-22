@@ -1,5 +1,5 @@
 import Image from "next/image";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { config } from "@/config";
 import {
   contributionSnapshotDate,
@@ -11,7 +11,6 @@ import {
   featuredProjects,
   playStoreProjects,
   playStoreProjectSummary,
-  portraits,
   profile,
   resumeUrl,
   socialLinks,
@@ -19,8 +18,11 @@ import {
   type Project,
 } from "@/data/siteContent";
 import { ActivityCalendar } from "./ActivityCalendar";
+import { AgentRuntimeInspector } from "./AgentRuntimeInspector";
+import { BytewiseCacheStrip, NenEnvelopeMeter } from "./CardVisualizers";
 import { ContributionExplorer } from "./ContributionExplorer";
 import { CountUp } from "./CountUp";
+import { HeroPortrait } from "./HeroPortrait";
 import { IndiaClock } from "./IndiaClock";
 import {
   CopyEmailButton,
@@ -93,7 +95,11 @@ function AlsoRow({ project }: { project: Project }) {
               alt=""
               width={48}
               height={48}
-              className="work-logo h-6 w-6 shrink-0 rounded-[0.45rem] bg-[var(--logo-well)] object-contain"
+              className={`work-logo h-6 w-6 shrink-0 rounded-[0.45rem] object-contain ${
+                project.logoWell === "white"
+                  ? "bg-white"
+                  : "bg-[var(--logo-well)]"
+              }`}
             />
           ) : null}
           <h3 className="draw-link truncate text-[15px] font-medium tracking-[-0.02em]">
@@ -139,9 +145,21 @@ function AlsoRow({ project }: { project: Project }) {
 function ProjectRow({ project }: { project: Project }) {
   const isWide = project.placement === "featured-wide";
 
+  const islandLabel =
+    project.slug === "speech-relay"
+      ? "Client Lab · 2× Trace + Live VAD"
+      : project.slug === "02-os"
+        ? "Client Lab · Tree-sitter Staleness"
+        : project.slug === "nen"
+          ? "Client Audio · Offline Envelope"
+          : project.slug === "bytewise"
+            ? "Client Cache · RAM ↔ SQLite"
+            : undefined;
+
   return (
     <ProjectCardShell
       id={project.slug}
+      data-island={islandLabel}
       className={`work-card reveal-on-scroll group flex flex-col rounded-2xl border border-[var(--line)] bg-[var(--card)] p-4 ${
         isWide ? "sm:col-span-2" : ""
       }`}
@@ -155,13 +173,17 @@ function ProjectRow({ project }: { project: Project }) {
                 alt=""
                 width={64}
                 height={64}
+                style={{ viewTransitionName: `note-logo-${project.slug}` }}
                 className={`work-logo h-11 w-11 shrink-0 rounded-[0.85rem] object-contain ${
                   project.logoWell === "white" ? "bg-white" : "bg-[var(--logo-well)]"
                 }`}
               />
             ) : null}
             <div className="min-w-0">
-              <h3 className="work-title text-[1.05rem] font-medium tracking-[-0.02em] text-[var(--ink)]">
+              <h3
+                style={{ viewTransitionName: `note-title-${project.slug}` }}
+                className="work-title text-[1.05rem] font-medium tracking-[-0.02em] text-[var(--ink)]"
+              >
                 {project.title}
               </h3>
               <p className="mt-0.5 truncate font-mono text-[11px] text-[var(--ink-faint)]">
@@ -193,10 +215,14 @@ function ProjectRow({ project }: { project: Project }) {
               alt=""
               width={64}
               height={64}
+              style={{ viewTransitionName: `note-logo-${project.slug}` }}
               className="work-logo h-11 w-11 rounded-[0.85rem] bg-[var(--logo-well)] object-contain"
             />
           ) : null}
-          <h3 className="work-title mt-4 text-[1.05rem] font-medium tracking-[-0.02em] text-[var(--ink)]">
+          <h3
+            style={{ viewTransitionName: `note-title-${project.slug}` }}
+            className="work-title mt-4 text-[1.05rem] font-medium tracking-[-0.02em] text-[var(--ink)]"
+          >
             {project.title}
           </h3>
         </>
@@ -211,6 +237,9 @@ function ProjectRow({ project }: { project: Project }) {
       </p>
 
       {project.slug === "speech-relay" ? <PipelineSchematic /> : null}
+      {project.slug === "02-os" ? <AgentRuntimeInspector /> : null}
+      {project.slug === "bytewise" ? <BytewiseCacheStrip /> : null}
+      {project.slug === "nen" ? <NenEnvelopeMeter /> : null}
 
       <div
         className={`mt-auto pt-3 ${
@@ -264,7 +293,10 @@ export function ClientApp() {
         tabIndex={-1}
         className="mx-auto w-full max-w-[48rem] px-6 pt-14 pb-36 outline-none sm:pt-20"
       >
-        <header className="site-header sticky top-0 z-40 flex items-center justify-between gap-2 bg-[var(--page-bg)] py-3 text-[14px] [box-shadow:0_0_0_100vmax_var(--page-bg)] [clip-path:inset(0_-100vmax)] sm:gap-3">
+        <header
+          data-island="Sticky Nav · Scroll Hairline"
+          className="site-header sticky top-0 z-40 flex items-center justify-between gap-2 bg-[var(--page-bg)] py-3 text-[14px] [box-shadow:0_0_0_100vmax_var(--page-bg)] [clip-path:inset(0_-100vmax)] sm:gap-3"
+        >
           <a href="#hero" className="page-link shrink-0 tracking-[-0.02em]">
             csy20
           </a>
@@ -280,8 +312,13 @@ export function ClientApp() {
           </div>
         </header>
 
-        <section id="hero" aria-labelledby="intro-heading" className="pt-10 sm:pt-24">
-          <div>
+        <section
+          id="hero"
+          data-island="RSC Hero · 3D Portrait"
+          aria-labelledby="intro-heading"
+          className="pt-10 sm:pt-24"
+        >
+          <div className="hero-stagger" style={{ "--stagger": 0 } as CSSProperties}>
             <div className="flex items-center justify-between gap-5">
               <div className="min-w-0">
                 <h1
@@ -294,24 +331,10 @@ export function ClientApp() {
                   {profile.role}
                 </p>
               </div>
-              <picture className="shrink-0">
-                <source
-                  srcSet="/portrait-twitter-256.webp 1x, /portrait-twitter.webp 2x"
-                  type="image/webp"
-                />
-                <img
-                  src={portraits.twitter.src}
-                  alt={portraits.twitter.alt}
-                  width={256}
-                  height={256}
-                  fetchPriority="high"
-                  decoding="async"
-                  className="h-[5.5rem] w-[5.5rem] rounded-[1.15rem] object-cover sm:h-28 sm:w-28"
-                />
-              </picture>
+              <HeroPortrait />
             </div>
           </div>
-          <div>
+          <div className="hero-stagger" style={{ "--stagger": 1 } as CSSProperties}>
             <p className="mt-7 max-w-[16ch] text-[1.65rem] leading-[1.15] font-medium tracking-[-0.035em] sm:mt-8 sm:text-[2rem]">
               {profile.tagline}
             </p>
@@ -319,8 +342,8 @@ export function ClientApp() {
               {profile.heroDescription}
             </p>
           </div>
-          <div>
-            <div className="mt-7 flex items-center gap-5 text-[14px]">
+          <div className="hero-stagger" style={{ "--stagger": 2 } as CSSProperties}>
+            <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3 text-[14px]">
               <a
                 href={`mailto:${config.email}`}
                 className="page-link rounded-lg border border-[var(--line)] bg-[var(--card)] px-3.5 py-1.5 font-medium text-[var(--ink)] transition-colors hover:border-[var(--ink-soft)]"
@@ -333,8 +356,21 @@ export function ClientApp() {
               >
                 Resume ↗
               </ExternalLink>
+              <a
+                href="#contact"
+                className="page-link inline-flex items-center gap-2 font-mono text-[11.5px] text-[var(--ink-faint)] sm:ml-auto"
+              >
+                <span
+                  aria-hidden="true"
+                  className="status-dot-pulse relative h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--accent)]"
+                />
+                <span>{profile.availability}</span>
+              </a>
             </div>
-            <div className="mt-8 grid grid-cols-3 gap-x-4 gap-y-5 sm:mt-10 sm:gap-x-6">
+            <div
+              className="hero-stagger mt-8 grid grid-cols-3 gap-x-4 gap-y-5 sm:mt-10 sm:gap-x-6"
+              style={{ "--stagger": 3 } as CSSProperties}
+            >
               <a
                 href="#speech-relay"
                 className="page-link border-t border-[var(--line)] pt-3"
@@ -413,6 +449,7 @@ export function ClientApp() {
 
         <section
           id="open-source"
+          data-island="Static Snapshot · Audible Calendar + PR Graph"
           aria-labelledby="open-source-title"
           className="reveal-on-scroll section-deferred mt-24"
         >
@@ -438,6 +475,7 @@ export function ClientApp() {
 
         <section
           id="contact"
+          data-island="RSC Footer · 0 Runtime APIs"
           aria-labelledby="contact-title"
           className="reveal-on-scroll section-deferred mt-24"
         >
@@ -491,6 +529,12 @@ export function ClientApp() {
             <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
               <SiteNetwork currentSiteId="csy20" />
               <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+                <a
+                  href="/llms.txt"
+                  className="page-link rounded-lg border border-[var(--line)] bg-[var(--card)] px-2.5 py-1 font-mono text-[11.5px] text-[var(--ink-faint)] transition-colors hover:border-[var(--accent)] hover:text-[var(--ink)]"
+                >
+                  llms.txt
+                </a>
                 <FooterClientControls />
               </div>
             </div>

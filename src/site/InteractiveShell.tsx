@@ -20,6 +20,7 @@ import {
 } from "./CaseStudyDialog";
 import { Opening, useHasSeenOpening } from "./Opening";
 import { PageTelemetry } from "./PageTelemetry";
+import { XRayToggle } from "./XRayMode";
 import {
   subscribeNoop,
   useHydrated,
@@ -90,9 +91,38 @@ export function CopyEmailButton({ email }: { email: string }) {
       type="button"
       onClick={handleCopy}
       aria-label={copied ? "Email address copied" : "Copy email address"}
-      className="folio-btn inline-flex cursor-pointer items-center rounded-lg border border-[var(--line)] bg-[var(--card)] px-2.5 py-1 font-mono text-[11px] text-[var(--ink-soft)] transition-colors hover:border-[var(--accent)] hover:text-[var(--ink)]"
+      className={`folio-btn inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 py-1 font-mono text-[11px] transition-colors ${
+        copied
+          ? "border-[color-mix(in_srgb,var(--accent)_65%,var(--line))] bg-[color-mix(in_srgb,var(--accent)_10%,var(--card))] text-[var(--ink)]"
+          : "border-[var(--line)] bg-[var(--card)] text-[var(--ink-soft)] hover:border-[var(--accent)] hover:text-[var(--ink)]"
+      }`}
     >
-      <span aria-live="polite">{copied ? "Copied ✓" : "Copy"}</span>
+      <span aria-live="polite" className="inline-flex items-center gap-1">
+        {copied ? (
+          <>
+            <svg
+              aria-hidden="true"
+              width="12"
+              height="12"
+              viewBox="0 0 14 14"
+              fill="none"
+              className="text-[var(--accent)]"
+            >
+              <path
+                d="M2.5 7.5L5.5 10.5L11.5 3.5"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="check-stroke"
+              />
+            </svg>
+            <span>Copied</span>
+          </>
+        ) : (
+          "Copy"
+        )}
+      </span>
     </button>
   );
 }
@@ -150,6 +180,7 @@ export function FooterClientControls() {
   return (
     <>
       <SoundToggle />
+      <XRayToggle />
       <PageTelemetry />
     </>
   );

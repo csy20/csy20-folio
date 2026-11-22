@@ -22,6 +22,11 @@ const fallbackRoutes = [
     detail: "Activity calendar and merged upstream PRs",
   },
   {
+    href: "/ring",
+    label: "Connected sites",
+    detail: "02_OS, ByteWise, Nen, LearnLLM, and tools",
+  },
+  {
     href: "/#contact",
     label: "Contact",
     detail: "Email and social profiles",

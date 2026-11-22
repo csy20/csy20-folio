@@ -1,29 +1,48 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import {
+  mergedContributionRepositories,
+  mergedContributions,
+} from "@/data/contributions";
 import { ContributionExplorer } from "./ContributionExplorer";
 
 describe("ContributionExplorer", () => {
-  it("renders All and every upstream repository as equal-weight filter pills", () => {
+  it("renders All and every deduplicated upstream repository as equal-weight filter pills", () => {
     render(<ContributionExplorer />);
 
     const group = screen.getByRole("group", {
       name: "Filter pull requests by repository",
     });
     const buttons = within(group).getAllByRole("button");
+    const countFor = (repo: string) =>
+      mergedContributionRepositories.find((item) => item.repository === repo)
+        ?.merged;
 
-    expect(buttons).toHaveLength(8);
-    expect(buttons[0]).toHaveTextContent("All16");
+    expect(buttons).toHaveLength(1 + mergedContributionRepositories.length);
+    expect(buttons[0]).toHaveTextContent(`All${mergedContributions.length}`);
     expect(buttons[0]).toHaveAttribute("aria-pressed", "true");
-    expect(buttons[1]).toHaveTextContent("semantica-agi/semantica7");
-    expect(buttons[2]).toHaveTextContent("dart-lang/sdk4");
-    expect(buttons[3]).toHaveTextContent("redhat-et/ripwire1");
-    expect(buttons[4]).toHaveTextContent("internetarchive/openlibrary1");
+    expect(buttons[1]).toHaveTextContent(
+      `semantica-agi/semantica${countFor("semantica-agi/semantica")}`,
+    );
+    expect(buttons[2]).toHaveTextContent(
+      `dart-lang/sdk${countFor("dart-lang/sdk")}`,
+    );
+    expect(buttons[3]).toHaveTextContent(
+      `NVIDIA/aicr${countFor("NVIDIA/aicr")}`,
+    );
+    expect(
+      screen.queryByRole("button", { name: /xevrion\/breakscale/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("filters merged pull requests by repository and resets cleanly", () => {
     render(<ContributionExplorer />);
+    const showAllText = `Show all ${mergedContributions.length}`;
 
-    expect(screen.getByText("Show all 16")).toBeInTheDocument();
+    expect(screen.getByText(showAllText)).toBeInTheDocument();
+    expect(
+      screen.getByText("feat: add --require-evidence for recipe resolution"),
+    ).toBeInTheDocument();
 
     const cogneePill = screen.getByRole("button", {
       name: /topoteretes\/cognee/i,
@@ -31,7 +50,7 @@ describe("ContributionExplorer", () => {
     fireEvent.click(cogneePill);
 
     expect(cogneePill).toHaveAttribute("aria-pressed", "true");
-    expect(screen.queryByText("Show all 16")).not.toBeInTheDocument();
+    expect(screen.queryByText(showAllText)).not.toBeInTheDocument();
     expect(
       screen.getByText(
         "fix(ingestion): keep WHERE clause for schema-qualified SQL tables",
@@ -49,7 +68,7 @@ describe("ContributionExplorer", () => {
     // Clicking the active pill toggles back to All
     fireEvent.click(cogneePill);
     expect(cogneePill).toHaveAttribute("aria-pressed", "false");
-    expect(screen.getByText("Show all 16")).toBeInTheDocument();
+    expect(screen.getByText(showAllText)).toBeInTheDocument();
   });
 
   it("links Dart SDK contributions to Gerrit review", () => {
@@ -109,5 +128,21 @@ describe("ContributionExplorer", () => {
     ) as HTMLDetailsElement | null;
     expect(details?.open).toBe(true);
     window.history.replaceState(null, "", window.location.pathname);
+  });
+
+  it("switches to Graph constellation view and filters when clicking a repository node", () => {
+    render(<ContributionExplorer />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Graph" }));
+    expect(
+      screen.getByRole("figure", { name: "Upstream repositories constellation graph" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /Filter by NVIDIA\/aicr/i }),
+    );
+    expect(
+      screen.getByRole("link", { name: /NVIDIA\/aicr ↗/i }),
+    ).toBeInTheDocument();
   });
 });

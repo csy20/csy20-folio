@@ -13,8 +13,11 @@ import {
   type ResolvedNote,
 } from "@/data/siteContent";
 import { SocialDock } from "@/dock/SocialDock";
+import { AgentRuntimeInspector } from "@/site/AgentRuntimeInspector";
+import { BytewiseCacheStrip, NenEnvelopeMeter } from "@/site/CardVisualizers";
 import { IndiaClock } from "@/site/IndiaClock";
 import { PipelineSchematic } from "@/site/PipelineSchematic";
+import { SiteNetwork } from "@/site/SiteNetwork";
 
 function isEngineeringNoteId(value: string): value is EngineeringNoteId {
   return (ENGINEERING_NOTE_IDS as readonly string[]).includes(value);
@@ -170,6 +173,7 @@ export default async function EngineeringNotePage({
                 alt=""
                 width={64}
                 height={64}
+                style={{ viewTransitionName: `note-logo-${id}` }}
                 className={`work-logo h-12 w-12 shrink-0 rounded-[0.9rem] object-contain ${
                   resolved.project.logoWell === "white"
                     ? "bg-white"
@@ -183,7 +187,10 @@ export default async function EngineeringNotePage({
                   ? resolved.study.category
                   : resolved.project.eyebrow}
               </p>
-              <h1 className="mt-1 text-[2rem] leading-tight font-medium tracking-[-0.035em] text-[var(--ink)] sm:text-[2.5rem]">
+              <h1
+                style={{ viewTransitionName: `note-title-${id}` }}
+                className="mt-1 text-[2rem] leading-tight font-medium tracking-[-0.035em] text-[var(--ink)] sm:text-[2.5rem]"
+              >
                 {resolved.project.title}
               </h1>
             </div>
@@ -211,6 +218,21 @@ export default async function EngineeringNotePage({
           {id === "speech-relay" ? (
             <div className="mt-6">
               <PipelineSchematic />
+            </div>
+          ) : null}
+          {id === "02-os" ? (
+            <div className="mt-6">
+              <AgentRuntimeInspector />
+            </div>
+          ) : null}
+          {id === "bytewise" ? (
+            <div className="mt-6">
+              <BytewiseCacheStrip />
+            </div>
+          ) : null}
+          {id === "nen" ? (
+            <div className="mt-6">
+              <NenEnvelopeMeter />
             </div>
           ) : null}
 
@@ -276,6 +298,85 @@ export default async function EngineeringNotePage({
             </div>
           )}
 
+          <section
+            aria-label="Engineering deep dive"
+            className="mt-10 space-y-8 border-t border-[var(--line)] pt-8"
+          >
+            <div>
+              <h2 className="font-mono text-[11px] tracking-[0.08em] text-[var(--ink-faint)] uppercase">
+                Architecture &amp; measured specs
+              </h2>
+              <dl className="mt-3 grid gap-2.5 sm:grid-cols-2">
+                {(resolved.kind === "case-study"
+                  ? resolved.study.deepDive
+                  : resolved.spotlight.deepDive
+                ).specs.map((spec) => (
+                  <div
+                    key={spec.label}
+                    className="rounded-xl border border-[var(--line)] bg-[var(--card)] px-3.5 py-2.5"
+                  >
+                    <dt className="font-mono text-[10.5px] tracking-[0.06em] text-[var(--ink-faint)] uppercase">
+                      {spec.label}
+                    </dt>
+                    <dd className="mt-1 font-mono text-[12.5px] leading-5 text-[var(--ink)]">
+                      {spec.value}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+
+            <div>
+              <h2 className="font-mono text-[11px] tracking-[0.08em] text-[var(--ink-faint)] uppercase">
+                Data &amp; execution flow
+              </h2>
+              <ol className="mt-3 flex flex-wrap items-center gap-2 font-mono text-[11.5px] text-[var(--ink-soft)]">
+                {(resolved.kind === "case-study"
+                  ? resolved.study.deepDive
+                  : resolved.spotlight.deepDive
+                ).flow.map((step, index, arr) => (
+                  <li key={step} className="inline-flex items-center gap-2">
+                    <span className="rounded-md border border-[var(--line)] bg-[var(--logo-well)] px-2.5 py-1 text-[var(--ink)]">
+                      {step}
+                    </span>
+                    {index < arr.length - 1 ? (
+                      <span
+                        aria-hidden="true"
+                        className="text-[var(--ink-faint)]"
+                      >
+                        →
+                      </span>
+                    ) : null}
+                  </li>
+                ))}
+              </ol>
+            </div>
+
+            <div>
+              <h2 className="font-mono text-[11px] tracking-[0.08em] text-[var(--ink-faint)] uppercase">
+                Trade-offs &amp; engineering decisions
+              </h2>
+              <ul className="mt-3 space-y-3.5">
+                {(resolved.kind === "case-study"
+                  ? resolved.study.deepDive
+                  : resolved.spotlight.deepDive
+                ).tradeoffs.map((item) => (
+                  <li
+                    key={item.title}
+                    className="rounded-xl border border-[var(--line)] bg-[var(--card)] p-4"
+                  >
+                    <h3 className="text-[14.5px] font-medium tracking-[-0.015em] text-[var(--ink)]">
+                      {item.title}
+                    </h3>
+                    <p className="mt-1.5 text-[14px] leading-6 text-[var(--ink-soft)]">
+                      {item.detail}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+
           <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-[var(--line)] pt-5">
             {resolved.project.releaseNote ? (
               <p className="max-w-[42ch] font-mono text-[11.5px] leading-5 text-[var(--ink-faint)]">
@@ -319,6 +420,16 @@ export default async function EngineeringNotePage({
               {adjacent.nextTitle} →
             </Link>
           </nav>
+
+          <footer className="mt-10 flex flex-wrap items-center justify-between gap-4 border-t border-[var(--line)] pt-6 text-[13px] text-[var(--ink-faint)]">
+            <SiteNetwork currentSiteId="csy20" />
+            <a
+              href="/llms.txt"
+              className="page-link font-mono text-[11.5px] text-[var(--ink-faint)] hover:text-[var(--ink)]"
+            >
+              llms.txt
+            </a>
+          </footer>
         </article>
       </main>
       <SocialDock homeHref="/" />

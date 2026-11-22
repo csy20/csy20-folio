@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { IndiaClock } from "./IndiaClock";
 
@@ -30,5 +30,17 @@ describe("IndiaClock", () => {
     });
 
     expect(screen.getByRole("time")).toHaveTextContent("15:30:43");
+  });
+
+  it("opens the IST timezone overlap popover when clicked", () => {
+    vi.setSystemTime(new Date("2026-10-30T10:00:42Z"));
+    render(<IndiaClock />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Inspect IST timezone overlap" }),
+    );
+    const region = screen.getByRole("region", { name: "IST timezone overlap" });
+    expect(region).toHaveTextContent("UTC+5:30");
+    expect(region).toHaveTextContent("Core 09–19h");
   });
 });

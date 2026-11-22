@@ -47,10 +47,12 @@ export type ContributionSummary = {
 };
 
 // Keep curation separate from generated data so refreshes preserve it.
-// This wallpaper asset submission remains in the snapshot, outside the technical view.
+// Non-engineering submissions and duplicate repo-transfer records remain in the snapshot, outside the technical view.
 export const curatedContributionExclusions: Readonly<Record<string, string>> = {
   "https://github.com/notparth2005/walli/pull/1":
     "Wallpaper asset submission; this section focuses on engineering contributions.",
+  "https://github.com/xevrion/breakscale/pull/74":
+    "Duplicate record from repository transfer to workersio/breakscale.",
 };
 
 export function getContributionStatus(record: {
@@ -180,3 +182,29 @@ export function summarizeMergeTurnaround(
 
 export const mergedTurnaroundSummary =
   summarizeMergeTurnaround(mergedContributions);
+
+const istIsoDateFormatter = new Intl.DateTimeFormat("en-CA", {
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  timeZone: "Asia/Kolkata",
+});
+
+export function getContributionIstDate(value: string): string {
+  return istIsoDateFormatter.format(new Date(value));
+}
+
+export const mergedContributionsByDate: ReadonlyMap<
+  string,
+  readonly Contribution[]
+> = (() => {
+  const byDate = new Map<string, Contribution[]>();
+  for (const record of mergedContributions) {
+    if (!record.mergedAt) continue;
+    const dateKey = getContributionIstDate(record.mergedAt);
+    const bucket = byDate.get(dateKey);
+    if (bucket) bucket.push(record);
+    else byDate.set(dateKey, [record]);
+  }
+  return byDate;
+})();

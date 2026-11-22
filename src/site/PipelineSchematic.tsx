@@ -8,10 +8,10 @@ import { usePrefersReducedMotion } from "./Opening";
 const hops = ["Mic", "VAD", "ASR", "MT", "TTS", "WebRTC out"] as const;
 const PLAYBACK_RATE = 2; // 2x playback: 2505 ms trace in ~1.25 s; 4708 ms race in ~2.35 s
 
-export type LatencyLabMode = "trace" | "vad-race";
+export type LatencyLabMode = "trace" | "vad-race" | "live-vad";
 export const SPEECH_TRACE_EVENT = "csy20:run-speech-trace";
 
-function Arrow({ active }: { active: boolean }) {
+function Arrow({ active, pulse }: { active: boolean; pulse: boolean }) {
   return (
     <svg
       aria-hidden="true"
@@ -22,7 +22,23 @@ function Arrow({ active }: { active: boolean }) {
         active ? "text-[var(--accent)] opacity-100" : "text-[var(--ink-faint)] opacity-45"
       }`}
     >
-      <path d="M0 5h19M15 1l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.2" />
+      <path
+        d="M0 5h19M15 1l4 4-4 4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        opacity={pulse ? 0.35 : 1}
+      />
+      {pulse ? (
+        <path
+          d="M0 5h19"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          className="signal-arrow-active"
+        />
+      ) : null}
     </svg>
   );
 }
@@ -43,13 +59,245 @@ function MobileConnector({ active }: { active: boolean }) {
   );
 }
 
+function LiveVadOscilloscope({ reduced }: { reduced: boolean }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [source, setSource] = useState<"demo" | "mic">("demo");
+  const [micStatus, setMicStatus] = useState<string>("synthetic voice burst · 0 server calls");
+  const [speaking, setSpeaking] = useState(false);
+  const [flushes, setFlushes] = useState(0);
+  const sound = useContext(SoundContext);
+
+  const micCleanupRef = useRef<(() => void) | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const dataArrayRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
+
+  const stopMic = useCallback(() => {
+    micCleanupRef.current?.();
+    micCleanupRef.current = null;
+    analyserRef.current = null;
+    dataArrayRef.current = null;
+  }, []);
+
+  const toggleMic = async () => {
+    sound?.playDockTick();
+    if (source === "mic") {
+      stopMic();
+      setSource("demo");
+      setMicStatus("synthetic voice burst · 0 server calls");
+      return;
+    }
+
+    if (
+      typeof navigator === "undefined" ||
+      !navigator.mediaDevices?.getUserMedia
+    ) {
+      setMicStatus("mic unavailable — running local synthetic VAD");
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const AudioCtx =
+        window.AudioContext ||
+        (window as Window & { webkitAudioContext?: typeof AudioContext })
+          .webkitAudioContext;
+      const ctx = new AudioCtx();
+      const mediaSrc = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      mediaSrc.connect(analyser);
+
+      analyserRef.current = analyser;
+      dataArrayRef.current = new Uint8Array(new ArrayBuffer(analyser.fftSize));
+      micCleanupRef.current = () => {
+        stream.getTracks().forEach((track) => track.stop());
+        mediaSrc.disconnect();
+        void ctx.close().catch(() => {});
+      };
+      setSource("mic");
+      setMicStatus("live mic · 100% on-device Web Audio");
+    } catch {
+      setSource("demo");
+      setMicStatus("mic permission declined — using synthetic voice");
+    }
+  };
+
+  useEffect(() => {
+    return () => stopMic();
+  }, [stopMic]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let rafId = 0;
+    let wasSpeaking = false;
+    let flushCount = 0;
+    const startMs = performance.now();
+
+    const draw = (now: number) => {
+      const dpr = window.devicePixelRatio || 1;
+      const width = canvas.clientWidth || 320;
+      const height = canvas.clientHeight || 56;
+      if (canvas.width !== Math.round(width * dpr) || canvas.height !== Math.round(height * dpr)) {
+        canvas.width = Math.round(width * dpr);
+        canvas.height = Math.round(height * dpr);
+      }
+
+      ctx.save();
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, width, height);
+
+      const style = getComputedStyle(document.documentElement);
+      const accent = style.getPropertyValue("--accent").trim() || "#38bdf8";
+      const faint = style.getPropertyValue("--ink-faint").trim() || "#8d8b84";
+      const line = style.getPropertyValue("--line").trim() || "rgba(255,255,255,0.1)";
+
+      const midY = height / 2;
+      const thresholdY = height * 0.28;
+
+      // Centerline + VAD gate threshold hairlines
+      ctx.strokeStyle = line;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, midY);
+      ctx.lineTo(width, midY);
+      ctx.stroke();
+
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(0, midY - thresholdY);
+      ctx.lineTo(width, midY - thresholdY);
+      ctx.moveTo(0, midY + thresholdY);
+      ctx.lineTo(width, midY + thresholdY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      let rms = 0;
+      const samples = 64;
+      const points: number[] = [];
+
+      if (source === "mic" && analyserRef.current && dataArrayRef.current) {
+        analyserRef.current.getByteTimeDomainData(dataArrayRef.current);
+        const buf = dataArrayRef.current;
+        let sumSq = 0;
+        const step = Math.max(1, Math.floor(buf.length / samples));
+        for (let i = 0; i < samples; i += 1) {
+          const v = ((buf[i * step] ?? 128) - 128) / 128;
+          sumSq += v * v;
+          points.push(v);
+        }
+        rms = Math.sqrt(sumSq / samples);
+      } else {
+        const t = (now - startMs) / 1000;
+        // Repeating 3.4s utterance cadence: 1.9s voiced, 1.5s pause
+        const cycle = t % 3.4;
+        const envelope =
+          cycle < 1.9
+            ? Math.sin((cycle / 1.9) * Math.PI) *
+              (0.55 + 0.45 * Math.sin(t * 7.2) ** 2)
+            : 0.04;
+        let sumSq = 0;
+        for (let i = 0; i < samples; i += 1) {
+          const x = i / samples;
+          const wave =
+            envelope *
+            (0.6 * Math.sin(x * 26 + t * 14) +
+              0.3 * Math.sin(x * 54 - t * 21) +
+              0.1 * Math.cos(x * 90 + t * 9));
+          sumSq += wave * wave;
+          points.push(wave);
+        }
+        rms = Math.sqrt(sumSq / samples);
+      }
+
+      const isVoice = rms > (source === "mic" ? 0.045 : 0.16);
+      if (isVoice !== wasSpeaking) {
+        if (wasSpeaking && !isVoice) {
+          flushCount += 1;
+          setFlushes(flushCount);
+        }
+        wasSpeaking = isVoice;
+        setSpeaking(isVoice);
+      }
+
+      ctx.strokeStyle = isVoice ? accent : faint;
+      ctx.lineWidth = isVoice ? 1.8 : 1.25;
+      ctx.beginPath();
+      for (let i = 0; i < points.length; i += 1) {
+        const x = (i / (points.length - 1)) * width;
+        const y = midY + (points[i] ?? 0) * (height * 0.44);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.restore();
+
+      if (!reduced) {
+        rafId = window.requestAnimationFrame(draw);
+      }
+    };
+
+    draw(performance.now());
+    return () => {
+      if (rafId) window.cancelAnimationFrame(rafId);
+    };
+  }, [reduced, source]);
+
+  return (
+    <div className="space-y-2 font-mono text-[11px]">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span
+            aria-hidden="true"
+            className={`h-1.5 w-1.5 rounded-full transition-colors ${
+              speaking ? "bg-[var(--accent)]" : "bg-[var(--ink-faint)] opacity-50"
+            }`}
+          />
+          <span className={speaking ? "text-[var(--ink)]" : "text-[var(--ink-soft)]"}>
+            {speaking ? "VAD gate: SPEECH" : "VAD gate: silence"}
+          </span>
+          <span className="tabular-nums text-[var(--ink-faint)]">
+            · {flushes} {flushes === 1 ? "flush" : "flushes"}
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={toggleMic}
+          className={`folio-btn cursor-pointer rounded-md border px-2 py-0.5 text-[10.5px] transition-colors ${
+            source === "mic"
+              ? "border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_14%,var(--card))] text-[var(--ink)]"
+              : "border-[var(--line)] bg-[var(--card)] text-[var(--ink-soft)] hover:border-[var(--accent)] hover:text-[var(--ink)]"
+          }`}
+        >
+          {source === "mic" ? "Stop mic" : "Use mic"}
+        </button>
+      </div>
+
+      <canvas
+        ref={canvasRef}
+        aria-label="Live voice activity detection oscilloscope"
+        className="block h-14 w-full rounded-lg border border-[var(--line)] bg-[var(--card)]"
+      />
+
+      <p className="text-[10px] tracking-[0.06em] text-[var(--ink-faint)] uppercase">
+        {micStatus}
+      </p>
+    </div>
+  );
+}
+
 export function PipelineSchematic() {
   const reduced = usePrefersReducedMotion();
   const sound = useContext(SoundContext);
   const playTickRef = useRef(sound?.playDockTick);
+  const playToneRef = useRef(sound?.playTone);
   useEffect(() => {
     playTickRef.current = sound?.playDockTick;
-  }, [sound?.playDockTick]);
+    playToneRef.current = sound?.playTone;
+  }, [sound?.playDockTick, sound?.playTone]);
 
   const { meanMs } = speechRelayMetrics.profile;
   const { fixedWindowMs, vadMs, reductionPercent } = speechRelayMetrics.vadComparison;
@@ -70,10 +318,24 @@ export function PipelineSchematic() {
     }
   }, []);
 
+  const emitHopSound = useCallback((step: number, done = false) => {
+    if (playToneRef.current) {
+      playToneRef.current(done ? { kind: "complete" } : { kind: "hop", step });
+    } else {
+      playTickRef.current?.();
+    }
+  }, []);
+
   const runSimulation = useCallback(
     (targetMode: LatencyLabMode) => {
       stopAnimation();
       setMode(targetMode);
+      if (targetMode === "live-vad") {
+        setRunning(false);
+        setCompleted(false);
+        setActiveHop(-1);
+        return;
+      }
       const durationMs = targetMode === "trace" ? meanMs : fixedWindowMs;
 
       if (reduced) {
@@ -88,7 +350,7 @@ export function PipelineSchematic() {
       setCompleted(false);
       setSimMs(0);
       setActiveHop(targetMode === "trace" ? 0 : -1);
-      playTickRef.current?.();
+      emitHopSound(0);
 
       const start = performance.now();
       let lastHop = 0;
@@ -106,11 +368,11 @@ export function PipelineSchematic() {
           if (hopIdx > lastHop) {
             lastHop = hopIdx;
             setActiveHop(hopIdx);
-            playTickRef.current?.();
+            emitHopSound(hopIdx);
           }
         } else if (!vadLocked && nextSim >= vadMs) {
           vadLocked = true;
-          playTickRef.current?.();
+          emitHopSound(4);
         }
 
         if (nextSim < durationMs) {
@@ -121,13 +383,13 @@ export function PipelineSchematic() {
           setCompleted(true);
           setSimMs(durationMs);
           if (targetMode === "trace") setActiveHop(hops.length - 1);
-          playTickRef.current?.();
+          emitHopSound(hops.length - 1, true);
         }
       };
 
       rafRef.current = window.requestAnimationFrame(step);
     },
-    [fixedWindowMs, meanMs, reduced, stopAnimation, vadMs],
+    [emitHopSound, fixedWindowMs, meanMs, reduced, stopAnimation, vadMs],
   );
 
   useEffect(() => {
@@ -152,6 +414,8 @@ export function PipelineSchematic() {
     setSimMs(nextMode === "trace" ? meanMs : fixedWindowMs);
     if (nextMode === "vad-race") {
       runSimulation("vad-race");
+    } else if (nextMode === "live-vad") {
+      playTickRef.current?.();
     }
   };
 
@@ -161,6 +425,7 @@ export function PipelineSchematic() {
   const fixedWidthPct = (fixedProgressMs / fixedWindowMs) * 100;
   const vadFinished = (running && simMs >= vadMs) || (!running && (completed || simMs >= vadMs));
   const runLabel = running ? "Running 2×…" : completed ? "Replay (2×)" : "Run (2×)";
+  const modeIndex = mode === "trace" ? 0 : mode === "vad-race" ? 1 : 2;
 
   return (
     <figure
@@ -171,15 +436,22 @@ export function PipelineSchematic() {
         <div
           role="group"
           aria-label="Speech Relay telemetry mode"
-          className="inline-flex min-w-0 rounded-lg border border-[var(--line)] bg-[var(--card)] p-0.5 font-mono text-[10.5px] sm:text-[11px]"
+          className="relative grid min-w-0 grid-cols-3 rounded-lg border border-[var(--line)] bg-[var(--card)] p-0.5 font-mono text-[10px] sm:text-[11px]"
         >
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0.5 left-0.5 w-[calc((100%-4px)/3)] rounded-md bg-[var(--logo-well)] transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
+            style={{
+              transform: `translateX(${modeIndex * 100}%)`,
+            }}
+          />
           <button
             type="button"
             aria-pressed={mode === "trace"}
             onClick={() => selectMode("trace")}
-            className={`folio-btn cursor-pointer truncate rounded-md px-1.5 py-1 transition-colors sm:px-2 ${
+            className={`folio-btn relative z-10 cursor-pointer truncate rounded-md px-1.5 py-1 transition-colors sm:px-2 ${
               mode === "trace"
-                ? "bg-[var(--logo-well)] text-[var(--ink)]"
+                ? "text-[var(--ink)]"
                 : "text-[var(--ink-faint)] hover:text-[var(--ink)]"
             }`}
           >
@@ -189,39 +461,53 @@ export function PipelineSchematic() {
             type="button"
             aria-pressed={mode === "vad-race"}
             onClick={() => selectMode("vad-race")}
-            className={`folio-btn cursor-pointer truncate rounded-md px-1.5 py-1 transition-colors sm:px-2 ${
+            className={`folio-btn relative z-10 cursor-pointer truncate rounded-md px-1.5 py-1 transition-colors sm:px-2 ${
               mode === "vad-race"
-                ? "bg-[var(--logo-well)] text-[var(--ink)]"
+                ? "text-[var(--ink)]"
                 : "text-[var(--ink-faint)] hover:text-[var(--ink)]"
             }`}
           >
             VAD A/B · -{reductionPercent}%
           </button>
+          <button
+            type="button"
+            aria-pressed={mode === "live-vad"}
+            onClick={() => selectMode("live-vad")}
+            className={`folio-btn relative z-10 cursor-pointer truncate rounded-md px-1.5 py-1 transition-colors sm:px-2 ${
+              mode === "live-vad"
+                ? "text-[var(--ink)]"
+                : "text-[var(--ink-faint)] hover:text-[var(--ink)]"
+            }`}
+          >
+            Live VAD
+          </button>
         </div>
 
-        <button
-          type="button"
-          onClick={() => runSimulation(mode)}
-          title={runLabel}
-          className="folio-btn inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[var(--line)] bg-[var(--card)] px-2 py-1.5 font-mono text-[11px] text-[var(--ink-soft)] transition-colors hover:border-[var(--accent)] hover:text-[var(--ink)] sm:px-2.5 sm:py-1"
-        >
-          <span
-            aria-hidden="true"
-            className={`hidden h-1.5 w-1.5 rounded-full bg-[var(--accent)] sm:inline-block ${
-              running ? "animate-ping" : ""
-            }`}
-          />
-          <svg
-            aria-hidden="true"
-            width="11"
-            height="11"
-            viewBox="0 0 12 12"
-            className={`text-[var(--accent)] sm:hidden ${running ? "animate-pulse" : ""}`}
+        {mode !== "live-vad" ? (
+          <button
+            type="button"
+            onClick={() => runSimulation(mode)}
+            title={runLabel}
+            className="folio-btn inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[var(--line)] bg-[var(--card)] px-2 py-1.5 font-mono text-[11px] text-[var(--ink-soft)] transition-colors hover:border-[var(--accent)] hover:text-[var(--ink)] sm:px-2.5 sm:py-1"
           >
-            <path d="M2.5 1.8L10 6L2.5 10.2V1.8Z" fill="currentColor" />
-          </svg>
-          <span className="max-sm:sr-only">{runLabel}</span>
-        </button>
+            <span
+              aria-hidden="true"
+              className={`hidden h-1.5 w-1.5 rounded-full bg-[var(--accent)] sm:inline-block ${
+                running ? "animate-ping" : ""
+              }`}
+            />
+            <svg
+              aria-hidden="true"
+              width="11"
+              height="11"
+              viewBox="0 0 12 12"
+              className={`text-[var(--accent)] sm:hidden ${running ? "animate-pulse" : ""}`}
+            >
+              <path d="M2.5 1.8L10 6L2.5 10.2V1.8Z" fill="currentColor" />
+            </svg>
+            <span className="max-sm:sr-only">{runLabel}</span>
+          </button>
+        ) : null}
       </div>
 
       {mode === "trace" ? (
@@ -244,7 +530,12 @@ export function PipelineSchematic() {
                   >
                     {hop}
                   </span>
-                  {index < hops.length - 1 ? <Arrow active={arrowActive} /> : null}
+                  {index < hops.length - 1 ? (
+                    <Arrow
+                      active={arrowActive}
+                      pulse={running && activeHop === index}
+                    />
+                  ) : null}
                   {index < hops.length - 1 && index !== 2 ? (
                     <MobileConnector active={arrowActive} />
                   ) : null}
@@ -264,7 +555,7 @@ export function PipelineSchematic() {
             </span>
           </div>
         </div>
-      ) : (
+      ) : mode === "vad-race" ? (
         <div className="space-y-2.5 font-mono text-[11px]">
           <div>
             <div className="mb-1 flex items-baseline justify-between gap-2">
@@ -308,6 +599,8 @@ export function PipelineSchematic() {
             {fixedWindowMs.toLocaleString("en-US")} ms)
           </p>
         </div>
+      ) : (
+        <LiveVadOscilloscope reduced={reduced} />
       )}
     </figure>
   );

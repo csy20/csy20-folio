@@ -18,6 +18,7 @@ import { SoundContext } from "@/dock/useSound";
 import { prefersReducedMotion } from "./motion";
 
 const featuredContributionUrls = [
+  "https://github.com/NVIDIA/aicr/pull/3342",
   "https://dart-review.googlesource.com/c/sdk/+/575740",
   "https://dart-review.googlesource.com/c/sdk/+/558101",
   "https://dart-review.googlesource.com/c/sdk/+/569580",
@@ -41,11 +42,12 @@ const moreContributions = mergedContributions.filter(
 const preferredRepoOrder = [
   "semantica-agi/semantica",
   "dart-lang/sdk",
+  "NVIDIA/aicr",
   "redhat-et/ripwire",
   "internetarchive/openlibrary",
   "topoteretes/cognee",
   "agent-of-empires/agent-of-empires",
-  "xevrion/breakscale",
+  "workersio/breakscale",
 ];
 
 const orderedRepositories = [...mergedContributionRepositories].sort((a, b) => {
@@ -110,7 +112,7 @@ function TurnaroundBar({
   return (
     <div
       aria-label="Pull request merge turnaround distribution"
-      className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--line)] bg-[var(--card)] px-3 py-2 font-mono text-[11px] text-[var(--ink-faint)]"
+      className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--line)] bg-[var(--card)] px-3 py-2 font-mono text-[11px] text-[var(--ink-faint)]"
     >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <span className="text-[var(--ink-soft)]">Merge velocity</span>
@@ -139,24 +141,18 @@ function TurnaroundBar({
         aria-hidden="true"
         className="flex h-1.5 w-24 shrink-0 overflow-hidden rounded-full bg-[var(--logo-well)]"
       >
-        {samePct > 0 ? (
-          <span
-            className="h-full bg-[var(--pr)]"
-            style={{ width: `${samePct}%` }}
-          />
-        ) : null}
-        {weekPct > 0 ? (
-          <span
-            className="h-full bg-[color-mix(in_srgb,var(--pr)_55%,transparent)]"
-            style={{ width: `${weekPct}%` }}
-          />
-        ) : null}
-        {longerPct > 0 ? (
-          <span
-            className="h-full bg-[color-mix(in_srgb,var(--ink)_25%,transparent)]"
-            style={{ width: `${longerPct}%` }}
-          />
-        ) : null}
+        <span
+          className="h-full bg-[var(--pr)] transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
+          style={{ width: `${samePct}%` }}
+        />
+        <span
+          className="h-full bg-[color-mix(in_srgb,var(--pr)_55%,transparent)] transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
+          style={{ width: `${weekPct}%` }}
+        />
+        <span
+          className="h-full bg-[color-mix(in_srgb,var(--ink)_25%,transparent)] transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
+          style={{ width: `${longerPct}%` }}
+        />
       </div>
     </div>
   );
@@ -234,8 +230,163 @@ function ContributionList({
   );
 }
 
+function shortRepoLabel(repository: string): string {
+  const [owner, name] = repository.split("/");
+  if (owner === "NVIDIA" || owner === "dart-lang") return repository;
+  return name ?? repository;
+}
+
+function ContributionConstellation({
+  selectedRepo,
+  onSelectRepo,
+}: {
+  selectedRepo: string | null;
+  onSelectRepo: (repo: string | null) => void;
+}) {
+  const cx = 240;
+  const cy = 112;
+  const rx = 165;
+  const ry = 76;
+  const count = orderedRepositories.length;
+
+  return (
+    <figure
+      aria-label="Upstream repositories constellation graph"
+      className="mb-4 overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--card)] p-3"
+    >
+      <svg
+        viewBox="0 0 480 224"
+        className="h-auto w-full select-none"
+        role="img"
+        aria-label={`Radial graph connecting csy20 to ${count} upstream repositories`}
+      >
+        {orderedRepositories.map((item, index) => {
+          const angle = -Math.PI / 2 + (index / count) * Math.PI * 2;
+          const x = cx + Math.cos(angle) * rx;
+          const y = cy + Math.sin(angle) * ry;
+          const active = selectedRepo === item.repository;
+          const dimmed = selectedRepo !== null && !active;
+
+          return (
+            <line
+              key={`edge-${item.repository}`}
+              x1={cx}
+              y1={cy}
+              x2={x}
+              y2={y}
+              stroke={active ? "var(--pr)" : "var(--line)"}
+              strokeWidth={active ? 1.8 : 1.1}
+              strokeDasharray={active ? "4 3" : undefined}
+              opacity={dimmed ? 0.35 : 1}
+              className="transition-all duration-200"
+            />
+          );
+        })}
+
+        <g
+          role="button"
+          tabIndex={0}
+          aria-label="Show all repositories"
+          onClick={() => onSelectRepo(null)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              onSelectRepo(null);
+            }
+          }}
+          className="cursor-pointer focus:outline-none"
+        >
+          <circle
+            cx={cx}
+            cy={cy}
+            r={22}
+            fill="var(--logo-well)"
+            stroke={selectedRepo === null ? "var(--accent)" : "var(--line)"}
+            strokeWidth={1.5}
+          />
+          <text
+            x={cx}
+            y={cy + 3.5}
+            textAnchor="middle"
+            fill="var(--ink)"
+            fontSize="10.5"
+            fontFamily="var(--font-geist-mono), monospace"
+          >
+            csy20
+          </text>
+        </g>
+
+        {orderedRepositories.map((item, index) => {
+          const angle = -Math.PI / 2 + (index / count) * Math.PI * 2;
+          const x = cx + Math.cos(angle) * rx;
+          const y = cy + Math.sin(angle) * ry;
+          const radius = Math.min(18, 9 + item.merged * 1.4);
+          const active = selectedRepo === item.repository;
+          const dimmed = selectedRepo !== null && !active;
+          const labelY = y < cy ? y - radius - 6 : y + radius + 12;
+
+          return (
+            <g
+              key={item.repository}
+              role="button"
+              tabIndex={0}
+              aria-label={`Filter by ${item.repository} (${item.merged} merged)`}
+              onClick={() => onSelectRepo(active ? null : item.repository)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onSelectRepo(active ? null : item.repository);
+                }
+              }}
+              opacity={dimmed ? 0.45 : 1}
+              className="cursor-pointer transition-opacity duration-200 focus:outline-none"
+            >
+              <circle
+                cx={x}
+                cy={y}
+                r={radius}
+                fill={
+                  active
+                    ? "color-mix(in srgb, var(--pr) 24%, var(--page-bg))"
+                    : "var(--logo-well)"
+                }
+                stroke={active ? "var(--pr)" : "var(--ink-faint)"}
+                strokeWidth={active ? 1.8 : 1.1}
+              />
+              <text
+                x={x}
+                y={y + 3.5}
+                textAnchor="middle"
+                fill="var(--ink)"
+                fontSize="10"
+                fontFamily="var(--font-geist-mono), monospace"
+              >
+                {item.merged}
+              </text>
+              <text
+                x={x}
+                y={labelY}
+                textAnchor="middle"
+                fill={active ? "var(--ink)" : "var(--ink-soft)"}
+                fontSize="9.5"
+                fontFamily="var(--font-geist-mono), monospace"
+              >
+                {shortRepoLabel(item.repository)}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+      <p className="mt-1 text-center font-mono text-[10px] text-[var(--ink-faint)]">
+        Click any upstream node to filter merged pull requests below · center resets
+      </p>
+    </figure>
+  );
+}
+
 export function ContributionExplorer() {
   const [selectedRepo, setSelectedRepo] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "graph">("list");
   const scopeRef = useRef<HTMLDivElement>(null);
   const sound = useContext(SoundContext);
 
@@ -327,7 +478,54 @@ export function ContributionExplorer() {
         })}
       </div>
 
-      <TurnaroundBar records={activeRecords} />
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <TurnaroundBar records={activeRecords} />
+        </div>
+        <div
+          role="group"
+          aria-label="Open source view mode"
+          className="inline-flex shrink-0 rounded-lg border border-[var(--line)] bg-[var(--card)] p-0.5 font-mono text-[11px]"
+        >
+          <button
+            type="button"
+            aria-pressed={viewMode === "list"}
+            onClick={() => {
+              sound?.playDockTick();
+              setViewMode("list");
+            }}
+            className={`folio-btn cursor-pointer rounded-md px-2 py-1 transition-colors ${
+              viewMode === "list"
+                ? "bg-[var(--logo-well)] text-[var(--ink)]"
+                : "text-[var(--ink-faint)] hover:text-[var(--ink)]"
+            }`}
+          >
+            List
+          </button>
+          <button
+            type="button"
+            aria-pressed={viewMode === "graph"}
+            onClick={() => {
+              sound?.playDockTick();
+              setViewMode("graph");
+            }}
+            className={`folio-btn cursor-pointer rounded-md px-2 py-1 transition-colors ${
+              viewMode === "graph"
+                ? "bg-[var(--logo-well)] text-[var(--ink)]"
+                : "text-[var(--ink-faint)] hover:text-[var(--ink)]"
+            }`}
+          >
+            Graph
+          </button>
+        </div>
+      </div>
+
+      {viewMode === "graph" ? (
+        <ContributionConstellation
+          selectedRepo={selectedRepo}
+          onSelectRepo={selectRepoWithTransition}
+        />
+      ) : null}
 
       {selectedRepo && filteredContributions && repoMergedQueryUrl ? (
         <div>
