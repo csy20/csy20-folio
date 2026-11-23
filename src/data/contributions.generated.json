@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-22T07:26:47.309Z",
+  "generatedAt": "2026-11-23T20:32:01.559Z",
   "author": "csy20",
   "query": "is:pr author:csy20 -user:csy20",
   "sourceUrl": "https://api.github.com/search/issues?q=is%3Apr%20author%3Acsy20%20-user%3Acsy20&per_page=100&sort=updated&order=desc",
@@ -9,6 +9,17 @@
   "total": 33,
   "records": [
     {
+      "repository": "internetarchive/openlibrary",
+      "number": 14569,
+      "title": "Fix list export and embed URLs without title slugs",
+      "url": "https://github.com/internetarchive/openlibrary/pull/14569",
+      "state": "closed",
+      "createdAt": "2026-11-18T17:04:44Z",
+      "updatedAt": "2026-11-23T09:57:35Z",
+      "closedAt": "2026-11-23T09:57:35Z",
+      "mergedAt": "2026-11-23T09:57:35Z"
+    },
+    {
       "repository": "topoteretes/cognee",
       "number": 4989,
       "title": "fix(api): map skill ingest failures to 400/500 instead of 409",
@@ -16,17 +27,6 @@
       "state": "open",
       "createdAt": "2026-09-08T22:35:28Z",
       "updatedAt": "2026-11-22T00:12:23Z",
-      "closedAt": null,
-      "mergedAt": null
-    },
-    {
-      "repository": "internetarchive/openlibrary",
-      "number": 14569,
-      "title": "Fix list export and embed URLs without title slugs",
-      "url": "https://github.com/internetarchive/openlibrary/pull/14569",
-      "state": "open",
-      "createdAt": "2026-11-18T17:04:44Z",
-      "updatedAt": "2026-11-19T08:33:19Z",
       "closedAt": null,
       "mergedAt": null
     },
