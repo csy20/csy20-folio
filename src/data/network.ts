@@ -9,7 +9,7 @@ export const NETWORK_SITE_IDS = [
   "nen",
   "learnllm",
   "contribute-pulse",
-  "premium-taste",
+  "jobmarket",
 ] as const;
 
 export type NetworkSiteId = (typeof NETWORK_SITE_IDS)[number];
@@ -88,14 +88,15 @@ export const networkSites: readonly NetworkSite[] = [
     iconWell: "dark",
   },
   {
-    id: "premium-taste",
-    name: "Premium Taste",
-    domain: "02-os.github.io/premium-taste",
-    url: "https://02-os.github.io/premium-taste/",
-    tagline: "UI judgment system, static HTML auditor, and MCP server for agents.",
-    category: "Design System",
-    icon: "/logos/premium-taste.png",
-    iconWell: "light",
+    id: "jobmarket",
+    name: "jobmarket",
+    domain: "jobmarket.site",
+    url: "https://jobmarket.site",
+    tagline:
+      "All-India job market pulse, ₹ LPA ladders, hiring hubs, and career pivots.",
+    category: "Web Tool",
+    icon: "/logos/jobmarket.svg",
+    iconWell: "dark",
   },
 ] as const;
 
